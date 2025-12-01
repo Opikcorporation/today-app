@@ -1,0 +1,4783 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TODAY</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBBO9MbhLuPT71l-vub0GPZisBMf_0vpXY",
+            authDomain: "today-app-3fb11.firebaseapp.com",
+            projectId: "today-app-3fb11",
+            storageBucket: "today-app-3fb11.firebasestorage.app",
+            messagingSenderId: "605616755880",
+            appId: "1:605616755880:web:178ef354a0b729732bde9d"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --card: #111111;
+            --card-hover: #181818;
+            --border: #222222;
+            --text: #ffffff;
+            --text-muted: #666666;
+            --accent: #f97316;
+            --accent-glow: 249, 115, 22;
+            --accent-light: #fb923c;
+            --accent-hover: #ff8555;
+            --green: #22c55e;
+            --green-dim: #166534;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px 30px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 24px 0 20px;
+            position: relative;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+
+        /* Top Left Clock & Search */
+        .top-left-area {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .top-left-clock {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .top-left-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 6px 12px;
+            transition: all 0.2s;
+        }
+
+        .top-left-search:focus-within {
+            border-color: var(--accent);
+        }
+
+        .top-left-search svg {
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .top-left-search input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text);
+            font-size: 0.8rem;
+            width: 140px;
+            font-family: inherit;
+        }
+
+        .top-left-search input::placeholder {
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        .calendar-day {
+            position: relative;
+        }
+
+        /* Top Right Actions Container */
+        .top-right-actions {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        /* Shortcuts Container */
+        .shortcuts-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .shortcut-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .shortcut-btn:hover {
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .shortcut-btn img {
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+        }
+
+        /* Shortcut Context Menu */
+        .shortcut-context-menu {
+            position: fixed;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 6px;
+            min-width: 120px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            z-index: 2000;
+            display: none;
+        }
+
+        .shortcut-context-menu.active {
+            display: block;
+        }
+
+        .shortcut-context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            color: var(--red);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .shortcut-context-menu-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .add-shortcut-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-shortcut-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .add-shortcut-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Shortcut Modal */
+        .shortcut-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .shortcut-modal.active {
+            display: flex;
+        }
+
+        .shortcut-modal-content {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .shortcut-modal h3 {
+            margin: 0 0 16px 0;
+            color: var(--text);
+            font-size: 1.1rem;
+        }
+
+        .shortcut-modal input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: var(--text);
+            font-size: 0.95rem;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .shortcut-modal input:focus {
+            border-color: var(--accent);
+        }
+
+        .shortcut-modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            justify-content: flex-end;
+        }
+
+        .shortcut-modal-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .shortcut-modal-btn.save {
+            background: var(--accent);
+            color: white;
+        }
+
+        .shortcut-modal-btn.cancel {
+            background: var(--bg);
+            color: var(--text-muted);
+        }
+
+        .analyse-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .analyse-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .analyse-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        /* Profile Button */
+        .profile-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--card);
+            cursor: pointer;
+            transition: all 0.2s;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .profile-btn:hover {
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .profile-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-btn .profile-initial {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* Profile Popup */
+        .profile-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .profile-popup.active {
+            display: flex;
+        }
+
+        .profile-popup-content {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .profile-popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .profile-popup-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .profile-popup-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .profile-popup-close:hover {
+            color: var(--text);
+        }
+
+        /* Profile Avatar Section */
+        .profile-avatar-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .profile-avatar-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid var(--accent);
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .profile-avatar-large:hover {
+            opacity: 0.8;
+        }
+
+        .profile-avatar-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-avatar-large .profile-initial-large {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .profile-avatar-edit {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-size: 0.65rem;
+            padding: 4px;
+            text-align: center;
+        }
+
+        .profile-avatar-input {
+            display: none;
+        }
+
+        /* Profile Form */
+        .profile-field {
+            margin-bottom: 16px;
+        }
+
+        .profile-field-label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .profile-field-input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .profile-field-input:focus {
+            border-color: var(--accent);
+        }
+
+        .profile-field-input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Color Picker */
+        .color-picker-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: var(--text);
+        }
+
+        /* Profile Actions */
+        .profile-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .profile-save-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .profile-save-btn:hover {
+            opacity: 0.9;
+        }
+
+        .profile-logout-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--red);
+            border-radius: 10px;
+            color: var(--red);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .profile-logout-btn:hover {
+            background: var(--red);
+            color: white;
+        }
+
+        /* Auth Popup */
+        .auth-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .auth-popup.hidden {
+            display: none;
+        }
+
+        .auth-content {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            width: 90%;
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .auth-logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .auth-tagline {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 28px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 24px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .auth-tab.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .auth-form {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .auth-form.active {
+            display: flex;
+        }
+
+        .auth-input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .auth-input:focus {
+            border-color: var(--accent);
+        }
+
+        .auth-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 6px;
+        }
+
+        .auth-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .auth-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-error {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .auth-error.show {
+            display: block;
+        }
+
+        .auth-skip {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: color 0.2s;
+        }
+
+        .auth-skip:hover {
+            color: var(--text);
+        }
+
+        /* Sync indicator */
+        .sync-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .sync-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .sync-indicator.success {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .sync-indicator.error {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .sync-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--text-muted);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Bento Layout Grid */
+        .layout {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 14px;
+            grid-auto-rows: minmax(80px, auto);
+        }
+
+        .main-column,
+        .sidebar {
+            display: contents;
+        }
+
+        .widget {
+            position: relative;
+            overflow: visible;
+        }
+
+        /* Bento sizing utilities */
+        .bento-w-3 { grid-column: span 3; }
+        .bento-w-4 { grid-column: span 4; }
+        .bento-w-8 { grid-column: span 8; }
+        .bento-w-12 { grid-column: span 12; }
+
+        .bento-h-2 { grid-row: span 2; }
+
+        @media (max-width: 1100px) {
+            .layout {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 12px;
+            }
+            .bento-w-3, .bento-cube { grid-column: span 3; }
+            .bento-w-4 { grid-column: span 3; }
+            .bento-w-8 { grid-column: span 6; }
+            .bento-w-12 { grid-column: span 6; }
+        }
+
+        @media (max-width: 700px) {
+            .layout {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .bento-w-3, .bento-w-4, .bento-w-8, .bento-w-12, .bento-cube {
+                grid-column: span 1;
+            }
+            .bento-h-2 {
+                grid-row: span 1;
+            }
+            .bento-cube {
+                min-height: auto;
+            }
+        }
+
+        /* Widget Base */
+        .widget {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px 18px;
+        }
+
+        /* Cube widgets - equal size */
+        .bento-cube {
+            grid-column: span 3;
+            min-height: 180px;
+        }
+
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .widget-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .widget-icon {
+            opacity: 0.7;
+        }
+
+        /* Input */
+        .input-section {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .entry-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 0;
+            padding-right: 50px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            line-height: 1.5;
+        }
+
+        .entry-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .save-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            width: 38px;
+            height: 38px;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(var(--accent-glow), 0.3);
+        }
+
+        .save-btn:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 6px 20px rgba(var(--accent-glow), 0.4);
+        }
+
+        .save-btn:active {
+            transform: translateY(-50%) scale(0.92);
+        }
+
+        /* Section Header */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .section-header h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 5px;
+            background: var(--bg);
+            padding: 3px;
+            border-radius: 8px;
+        }
+
+        .toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .toggle-btn:hover:not(.active) {
+            color: var(--text);
+        }
+
+        /* Entries */
+        .entries-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .date-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 12px 0 5px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 5px;
+        }
+
+        .entry {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .entry:hover {
+            border-color: #444;
+        }
+
+        .entry-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .entry-time {
+            font-size: 0.7rem;
+            color: var(--accent);
+            font-weight: 500;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .entry-text {
+            color: var(--text);
+            font-size: 0.95rem;
+            word-wrap: break-word;
+        }
+
+        .entry-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .entry:hover .entry-actions {
+            opacity: 1;
+        }
+
+        .entry-action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .entry-action-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .entry-action-btn.edit:hover {
+            color: var(--accent);
+            background: rgba(var(--accent-glow), 0.1);
+        }
+
+        .entry-action-btn.delete:hover {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            opacity: 0;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .entry:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            color: #ff4444;
+            background: rgba(255,68,68,0.1);
+        }
+
+        /* Entry Edit Mode */
+        .entry-edit-textarea {
+            width: 100%;
+            background: var(--card);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 10px;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: inherit;
+            line-height: 1.4;
+            resize: vertical;
+            min-height: 60px;
+            outline: none;
+        }
+
+        .entry-edit-datetime {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .entry-edit-date,
+        .entry-edit-time {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-size: 0.85rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .entry-edit-date:focus,
+        .entry-edit-time:focus {
+            border-color: var(--accent);
+        }
+
+        .entry-edit-date {
+            flex: 1;
+        }
+
+        .entry-edit-time {
+            width: 100px;
+        }
+
+        .entry-edit-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .entry-edit-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .entry-edit-btn.save {
+            background: var(--green);
+            color: white;
+        }
+
+        .entry-edit-btn.save:hover {
+            background: #16a34a;
+        }
+
+        .entry-edit-btn.cancel {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .entry-edit-btn.cancel:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        /* Empty State */
+        .empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-hint {
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+
+        /* ============================================
+           CALENDAR WIDGET
+           ============================================ */
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calendar-nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .calendar-nav-btn:hover {
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .calendar-month {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .calendar-day-name {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 5px 0;
+            font-weight: 500;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .calendar-day:hover {
+            background: var(--bg);
+        }
+
+        .calendar-day.other-month {
+            color: var(--text-muted);
+            opacity: 0.3;
+        }
+
+        .calendar-day.today {
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+        }
+
+        .calendar-day.selected {
+            background: var(--accent);
+            color: white;
+        }
+
+        .calendar-day.has-entries::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            width: 4px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        .calendar-day.today.has-entries::after {
+            background: white;
+        }
+
+        .selected-date-info {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clear-selection {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-selection:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* ============================================
+           TODO WIDGET
+           ============================================ */
+        .todo-input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .todo-input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .todo-input:focus {
+            border-color: var(--accent);
+        }
+
+        .todo-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .todo-add-btn {
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            padding: 0 15px;
+            cursor: pointer;
+            color: white;
+            font-size: 1.2rem;
+            transition: background 0.2s;
+        }
+
+        .todo-add-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .todo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--bg);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .todo-item:hover {
+            background: var(--card-hover);
+        }
+
+        .todo-checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .todo-checkbox:hover {
+            border-color: var(--green);
+        }
+
+        .todo-item.done .todo-checkbox {
+            background: var(--green);
+            border-color: var(--green);
+        }
+
+        .todo-item.done .todo-checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 0.7rem;
+        }
+
+        .todo-text {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .todo-item.done .todo-text {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .todo-delete {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            opacity: 0;
+            transition: all 0.2s;
+        }
+
+        .todo-item:hover .todo-delete {
+            opacity: 1;
+        }
+
+        .todo-delete:hover {
+            color: #ff4444;
+        }
+
+        .todo-empty {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .todo-stats {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            margin-top: 12px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* ============================================
+           TIMER WIDGET
+           ============================================ */
+        .timer-display-container {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 15px;
+            overflow: visible;
+        }
+
+        .timer-ring {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+            overflow: visible;
+        }
+
+        .timer-ring-bg {
+            fill: none;
+            stroke: var(--border);
+            stroke-width: 6;
+        }
+
+        .timer-ring-progress {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-dasharray: 339.292;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 0.5s ease;
+            filter: drop-shadow(0 0 12px rgba(var(--accent-glow), 0.6)) drop-shadow(0 0 25px rgba(var(--accent-glow), 0.4));
+        }
+
+        .timer-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.8rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--text);
+        }
+
+        .timer-presets {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+
+        .timer-preset {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .timer-preset:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        .timer-preset.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .timer-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .timer-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .timer-btn-start {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(var(--accent-glow), 0.4);
+        }
+
+        .timer-btn-start:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(var(--accent-glow), 0.5);
+        }
+
+        .timer-btn-pause {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
+        }
+
+        .timer-btn-pause:hover {
+            transform: scale(1.05);
+        }
+
+        .timer-btn-reset {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .timer-btn-reset:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .timer-label-row {
+            margin-top: 5px;
+        }
+
+        .timer-label-input {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text);
+            font-size: 0.85rem;
+            font-family: inherit;
+            text-align: center;
+            outline: none;
+        }
+
+        .timer-label-input:focus {
+            border-color: var(--accent);
+        }
+
+        .timer-label-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Timer running state */
+        .timer-running .timer-display {
+            color: var(--accent);
+        }
+
+        .timer-finished .timer-ring-progress {
+            stroke: var(--green);
+            filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.6));
+        }
+
+        .timer-finished .timer-display {
+            color: var(--green);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ============================================
+           MEMENTO MORI WIDGET
+           ============================================ */
+        .memento-section {
+            margin-bottom: 16px;
+        }
+
+        .memento-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+        }
+
+        .memento-label-text {
+            color: var(--text-muted);
+        }
+
+        .memento-label-percent {
+            color: var(--accent);
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .memento-bar {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .memento-progress {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .memento-progress.year {
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-light) 100%);
+        }
+
+        .memento-progress.month {
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-light) 100%);
+        }
+
+        .memento-quote {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: 12px;
+            opacity: 0.8;
+        }
+
+        /* Objectives Section */
+        .objectives-section {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+
+        .objective-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .objective-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .objective-icon {
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+
+        .objective-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .objective-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .objective-text {
+            font-size: 0.8rem;
+            color: var(--text);
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .objective-text.empty {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* ============================================
+           HABIT TRACKER WIDGET
+           ============================================ */
+        .widget-header-with-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .widget-settings-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .widget-settings-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .habit-categories {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .habit-category-btn {
+            padding: 6px 12px;
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .habit-category-btn:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        .habit-category-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .habit-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .habit-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: var(--bg);
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .habit-item:hover {
+            background: var(--card-hover);
+        }
+
+        .habit-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .habit-checkbox:hover {
+            border-color: var(--green);
+        }
+
+        .habit-item.done .habit-checkbox {
+            background: var(--green);
+            border-color: var(--green);
+        }
+
+        .habit-item.done .habit-checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .habit-icon {
+            font-size: 1.1rem;
+        }
+
+        .habit-text {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .habit-item.done .habit-text {
+            color: var(--text-muted);
+        }
+
+        .habit-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .habit-empty {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Habit Settings Popup */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .popup-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .popup {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 450px;
+            max-height: 85vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .popup-overlay.show .popup {
+            transform: scale(1);
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .popup-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .popup-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: var(--bg);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .popup-close:hover {
+            color: var(--accent);
+        }
+
+        .popup-body {
+            padding: 20px;
+        }
+
+        .popup-section {
+            margin-bottom: 20px;
+        }
+
+        .popup-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .popup-section-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .popup-category-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .popup-category-tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .popup-category-tab:hover {
+            border-color: var(--accent);
+        }
+
+        .popup-category-tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .popup-habit-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .popup-habit-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .popup-habit-icon {
+            font-size: 1.2rem;
+        }
+
+        .popup-habit-inputs {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+        }
+
+        .popup-habit-input {
+            flex: 1;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 10px;
+            color: var(--text);
+            font-size: 0.85rem;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .popup-habit-input:focus {
+            border-color: var(--accent);
+        }
+
+        .popup-habit-input.icon-input {
+            width: 50px;
+            flex: none;
+            text-align: center;
+        }
+
+        .popup-habit-delete {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .popup-habit-delete:hover {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        .popup-add-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px dashed var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .popup-add-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .objective-textarea {
+            width: 100%;
+            min-height: 80px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: inherit;
+            line-height: 1.4;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+
+        .objective-textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .popup-save-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .popup-save-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.01);
+        }
+
+        /* ============================================
+           MOOD TRACKER WIDGET
+           ============================================ */
+        #mood-widget {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #mood-widget .widget-header {
+            flex-shrink: 0;
+        }
+
+        .mood-container {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 5px;
+            flex-shrink: 0;
+        }
+
+        .mood-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            background: var(--bg);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mood-btn:hover {
+            transform: scale(1.15);
+            background: var(--card-hover);
+        }
+
+        .mood-btn.selected {
+            border-color: var(--accent);
+            background: rgba(var(--accent-glow), 0.15);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(var(--accent-glow), 0.3);
+        }
+
+        .mood-message {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 12px;
+            min-height: 20px;
+        }
+
+        .mood-message.active {
+            color: var(--text);
+        }
+
+        .mood-reflection {
+            margin-top: 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mood-reflection-textarea {
+            width: 100%;
+            min-height: 120px;
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            color: var(--text);
+            font-size: 0.85rem;
+            font-family: inherit;
+            line-height: 1.4;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .mood-reflection-textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .mood-reflection-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .mood-reflection-saved {
+            font-size: 0.7rem;
+            color: var(--green);
+            text-align: right;
+            margin-top: 5px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .mood-reflection-saved.show {
+            opacity: 1;
+        }
+
+        /* ============================================
+           NOTES WIDGET
+           ============================================ */
+        .notes-quick-add {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .notes-input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text);
+            font-size: 0.85rem;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .notes-input:focus {
+            border-color: var(--accent);
+        }
+
+        .notes-add-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .notes-add-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .notes-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .notes-view-all {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .notes-view-all:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* ============================================
+           PRAYER WIDGET
+           ============================================ */
+        .prayer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .prayer-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--bg);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .prayer-item:hover {
+            background: var(--card-hover);
+        }
+
+        .prayer-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .prayer-checkbox:hover {
+            border-color: var(--green);
+        }
+
+        .prayer-item.done .prayer-checkbox {
+            background: var(--green);
+            border-color: var(--green);
+        }
+
+        .prayer-item.done .prayer-checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .prayer-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .prayer-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .prayer-time {
+            font-size: 0.7rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .prayer-item.done .prayer-name {
+            color: var(--text-muted);
+        }
+
+        .prayer-stats {
+            text-align: center;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* ============================================
+           QURAN VERSE WIDGET
+           ============================================ */
+        .verse-container {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .verse-arabic {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            text-align: right;
+            color: var(--text);
+            margin-bottom: 12px;
+            font-family: 'Traditional Arabic', 'Arabic Typesetting', serif;
+        }
+
+        .verse-translation {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+
+        .verse-reference {
+            font-size: 0.75rem;
+            color: var(--accent);
+            font-weight: 600;
+            text-align: right;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--accent);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 500;
+            box-shadow: 0 10px 40px rgba(var(--accent-glow), 0.3);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .entry, .todo-item {
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Popup -->
+    <div class="auth-popup hidden" id="auth-popup">
+        <div class="auth-content">
+            <div class="auth-logo">TODAY</div>
+            <div class="auth-tagline">Ne planifie pas, souviens-toi.</div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">Connexion</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">Inscription</button>
+            </div>
+            
+            <!-- Login Form -->
+            <form class="auth-form active" id="login-form" onsubmit="handleLogin(event)">
+                <input type="email" class="auth-input" id="login-email" placeholder="Email" required>
+                <input type="password" class="auth-input" id="login-password" placeholder="Mot de passe" required>
+                <div class="auth-error" id="login-error"></div>
+                <button type="submit" class="auth-btn" id="login-btn">Se connecter</button>
+            </form>
+            
+            <!-- Register Form -->
+            <form class="auth-form" id="register-form" onsubmit="handleRegister(event)">
+                <input type="text" class="auth-input" id="register-pseudo" placeholder="Pseudo" required>
+                <input type="email" class="auth-input" id="register-email" placeholder="Email" required>
+                <input type="password" class="auth-input" id="register-password" placeholder="Mot de passe (min 6 caractères)" required minlength="6">
+                <div class="auth-error" id="register-error"></div>
+                <button type="submit" class="auth-btn" id="register-btn">Créer un compte</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sync Indicator -->
+    <div class="sync-indicator" id="sync-indicator">
+        <div class="sync-spinner"></div>
+        <span id="sync-text">Synchronisation...</span>
+    </div>
+
+    <div class="app">
+        <!-- Top Left Clock & Search -->
+        <div class="top-left-area">
+            <div class="top-left-clock" id="top-clock"></div>
+            <form class="top-left-search" onsubmit="searchGoogle(event)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.4;">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor" stroke="none"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor" stroke="none"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="currentColor" stroke="none"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor" stroke="none"/>
+                </svg>
+                <input type="text" id="google-search" placeholder="Rechercher...">
+            </form>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">TODAY</h1>
+            <p class="tagline">Ne planifie pas, souviens-toi.</p>
+        </header>
+
+        <!-- Top Right Actions (Shortcuts + Analyse + Profile) -->
+        <div class="top-right-actions">
+            <div class="shortcuts-container" id="shortcuts-container">
+                <!-- Shortcuts will be inserted here -->
+            </div>
+            <button class="add-shortcut-btn" onclick="openShortcutModal()" title="Ajouter un raccourci">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+            <button class="analyse-btn" onclick="openAnalyse()" title="Analyse">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 3v18h18"/>
+                    <path d="M18 17V9"/>
+                    <path d="M13 17V5"/>
+                    <path d="M8 17v-3"/>
+                </svg>
+            </button>
+            <button class="profile-btn" onclick="openProfileSettings()" title="Profil" id="profile-btn">
+                <span class="profile-initial" id="profile-initial">?</span>
+            </button>
+        </div>
+
+        <!-- Profile Settings Popup -->
+        <div class="profile-popup" id="profile-popup">
+            <div class="profile-popup-content">
+                <div class="profile-popup-header">
+                    <span class="profile-popup-title">Paramètres du profil</span>
+                    <button class="profile-popup-close" onclick="closeProfileSettings()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="profile-avatar-section">
+                    <div class="profile-avatar-large" onclick="document.getElementById('avatar-input').click()">
+                        <span class="profile-initial-large" id="profile-initial-large">?</span>
+                        <div class="profile-avatar-edit">Modifier</div>
+                    </div>
+                    <input type="file" id="avatar-input" class="profile-avatar-input" accept="image/*" onchange="handleAvatarChange(event)">
+                </div>
+
+                <div class="profile-field">
+                    <label class="profile-field-label">Pseudo</label>
+                    <input type="text" class="profile-field-input" id="profile-pseudo" placeholder="Ton pseudo">
+                </div>
+
+                <div class="profile-field">
+                    <label class="profile-field-label">Email</label>
+                    <input type="email" class="profile-field-input" id="profile-email" placeholder="email@exemple.com" disabled>
+                </div>
+
+                <div class="profile-field">
+                    <label class="profile-field-label">Couleur d'accentuation</label>
+                    <div class="color-picker-container" id="color-picker">
+                        <div class="color-option" style="background: #f97316;" data-color="#f97316" onclick="selectAccentColor('#f97316')"></div>
+                        <div class="color-option" style="background: #ef4444;" data-color="#ef4444" onclick="selectAccentColor('#ef4444')"></div>
+                        <div class="color-option" style="background: #ec4899;" data-color="#ec4899" onclick="selectAccentColor('#ec4899')"></div>
+                        <div class="color-option" style="background: #a855f7;" data-color="#a855f7" onclick="selectAccentColor('#a855f7')"></div>
+                        <div class="color-option" style="background: #6366f1;" data-color="#6366f1" onclick="selectAccentColor('#6366f1')"></div>
+                        <div class="color-option" style="background: #3b82f6;" data-color="#3b82f6" onclick="selectAccentColor('#3b82f6')"></div>
+                        <div class="color-option" style="background: #06b6d4;" data-color="#06b6d4" onclick="selectAccentColor('#06b6d4')"></div>
+                        <div class="color-option" style="background: #10b981;" data-color="#10b981" onclick="selectAccentColor('#10b981')"></div>
+                        <div class="color-option" style="background: #84cc16;" data-color="#84cc16" onclick="selectAccentColor('#84cc16')"></div>
+                        <div class="color-option" style="background: #eab308;" data-color="#eab308" onclick="selectAccentColor('#eab308')"></div>
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <button class="profile-save-btn" onclick="saveProfile()">Sauvegarder</button>
+                    <button class="profile-logout-btn" onclick="logout()">Déconnexion</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shortcut Modal -->
+        <div class="shortcut-modal" id="shortcut-modal">
+            <div class="shortcut-modal-content">
+                <h3>Ajouter un raccourci</h3>
+                <input type="url" id="shortcut-url-input" placeholder="https://exemple.com">
+                <div class="shortcut-modal-actions">
+                    <button class="shortcut-modal-btn cancel" onclick="closeShortcutModal()">Annuler</button>
+                    <button class="shortcut-modal-btn save" onclick="saveShortcut()">Ajouter</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shortcut Context Menu -->
+        <div class="shortcut-context-menu" id="shortcut-context-menu">
+            <div class="shortcut-context-menu-item" onclick="confirmDeleteShortcut()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Supprimer
+            </div>
+        </div>
+
+        <!-- Layout -->
+        <div class="layout">
+            <!-- Row 1: Input full width -->
+            <div class="widget bento-w-12" id="input-widget">
+                <div class="input-section">
+                    <textarea id="entry-input" class="entry-input" placeholder="Qu'as-tu accompli ?" rows="1"></textarea>
+                    <button id="save-btn" class="save-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Row 2: Entries + Calendar side by side -->
+            <div class="widget bento-w-8 bento-h-2" id="entries-widget">
+                <div class="section-header">
+                    <h2 id="section-title">Aujourd'hui</h2>
+                    <div class="view-toggle">
+                        <button id="view-today" class="toggle-btn active">Aujourd'hui</button>
+                        <button id="view-all" class="toggle-btn">Tout</button>
+                    </div>
+                </div>
+                
+                <div id="entries-list" class="entries-list">
+                    <!-- Entries rendered here -->
+                </div>
+            </div>
+
+            <div class="widget bento-w-4 bento-h-2" id="calendar-widget">
+                    <div class="widget-header">
+                        <span class="widget-title"><svg class="widget-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Calendrier</span>
+                    </div>
+                    <div class="calendar-nav">
+                        <button class="calendar-nav-btn" id="prev-month">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                        </button>
+                        <span class="calendar-month" id="calendar-month"></span>
+                        <button class="calendar-nav-btn" id="next-month">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="calendar-grid" id="calendar-grid">
+                        <!-- Calendar rendered here -->
+                    </div>
+                </div>
+
+            <!-- Row 3: 4 cubes -->
+            <div class="widget bento-cube" id="timer-widget">
+                    <div class="widget-header">
+                        <span class="widget-title"><svg class="widget-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Minuteur</span>
+                    </div>
+                    <div class="timer-display-container">
+                        <svg class="timer-ring" viewBox="-10 -10 140 140">
+                            <circle class="timer-ring-bg" cx="60" cy="60" r="54" />
+                            <circle class="timer-ring-progress" id="timer-progress" cx="60" cy="60" r="54" />
+                        </svg>
+                        <div class="timer-display" id="timer-display">25:00</div>
+                    </div>
+                    <div class="timer-presets">
+                        <button class="timer-preset" data-time="5">5m</button>
+                        <button class="timer-preset" data-time="15">15m</button>
+                        <button class="timer-preset active" data-time="25">25m</button>
+                        <button class="timer-preset" data-time="45">45m</button>
+                        <button class="timer-preset" data-time="60">60m</button>
+                    </div>
+                    <div class="timer-controls">
+                        <button class="timer-btn timer-btn-start" id="timer-start">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"/>
+                            </svg>
+                        </button>
+                        <button class="timer-btn timer-btn-pause" id="timer-pause" style="display: none;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="6" y="4" width="4" height="16"/>
+                                <rect x="14" y="4" width="4" height="16"/>
+                            </svg>
+                        </button>
+                        <button class="timer-btn timer-btn-reset" id="timer-reset">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M2.5 2v6h6M21.5 22v-6h-6"/>
+                                <path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.2"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="timer-label-row">
+                        <input type="text" id="timer-label" class="timer-label-input" placeholder="Focus sur...">
+                    </div>
+                </div>
+
+            <div class="widget bento-cube" id="todo-widget">
+                <div class="widget-header">
+                    <span class="widget-title"><svg class="widget-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> À faire</span>
+                </div>
+                <div class="todo-input-row">
+                    <input type="text" id="todo-input" class="todo-input" placeholder="Nouvelle tâche...">
+                    <button id="todo-add-btn" class="todo-add-btn">+</button>
+                </div>
+                <div id="todo-list" class="todo-list">
+                    <!-- Todos rendered here -->
+                </div>
+                <div class="todo-stats" id="todo-stats"></div>
+            </div>
+
+            <div class="widget bento-cube" id="memento-widget">
+                    <div class="widget-header-with-btn">
+                        <span class="widget-title"><svg class="widget-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12M6 22h12M6 2v4c0 2 2 4 6 6-4 2-6 4-6 6v4M18 2v4c0 2-2 4-6 6 4 2 6 4 6 6v4"/></svg> Memento Mori</span>
+                        <button class="widget-settings-btn" onclick="openObjectivesSettings()" title="Paramètres">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="memento-section">
+                        <div class="memento-label">
+                            <span class="memento-label-text">Année 2025</span>
+                            <span class="memento-label-percent" id="year-percent">0%</span>
+                        </div>
+                        <div class="memento-bar">
+                            <div class="memento-progress year" id="year-progress"></div>
+                        </div>
+                    </div>
+                    <div class="memento-section">
+                        <div class="memento-label">
+                            <span class="memento-label-text" id="month-label">Décembre</span>
+                            <span class="memento-label-percent" id="month-percent">0%</span>
+                        </div>
+                        <div class="memento-bar">
+                            <div class="memento-progress month" id="month-progress"></div>
+                        </div>
+                    </div>
+                    <div class="objectives-section">
+                        <div class="objective-item">
+                            <span class="objective-icon">🎯</span>
+                            <div class="objective-content">
+                                <div class="objective-label">Objectif de l'année</div>
+                                <div class="objective-text" id="year-objective">Non défini</div>
+                            </div>
+                        </div>
+                        <div class="objective-item">
+                            <span class="objective-icon">📅</span>
+                            <div class="objective-content">
+                                <div class="objective-label">Objectif du mois</div>
+                                <div class="objective-text" id="month-objective">Non défini</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            <!-- Habit Tracker Widget -->
+            <div class="widget bento-cube" id="habit-widget">
+                    <div class="widget-header-with-btn">
+                        <span class="widget-title"><svg class="widget-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Habitudes</span>
+                        <button class="widget-settings-btn" onclick="openHabitSettings()" title="Paramètres">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="habit-categories" id="habit-categories">
+                        <!-- Categories rendered here -->
+                    </div>
+                    <div class="habit-list" id="habit-list">
+                        <!-- Habits rendered here -->
+                    </div>
+                    <div class="habit-stats" id="habit-stats"></div>
+                </div>
+
+                <!-- Habit Settings Popup -->
+                <div class="popup-overlay" id="habit-popup">
+                    <div class="popup">
+                        <div class="popup-header">
+                            <span class="popup-title">⚙️ Paramètres Habitudes</span>
+                            <button class="popup-close" onclick="closeHabitSettings()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="popup-body">
+                            <div class="popup-section">
+                                <div class="popup-section-title">Catégorie</div>
+                                <div class="popup-category-tabs" id="popup-category-tabs">
+                                    <!-- Category tabs rendered here -->
+                                </div>
+                            </div>
+                            <div class="popup-section">
+                                <div class="popup-section-title">Habitudes</div>
+                                <div class="popup-habit-list" id="popup-habit-list">
+                                    <!-- Habit items rendered here -->
+                                </div>
+                                <button class="popup-add-btn" onclick="addNewHabit()">
+                                    + Ajouter une habitude
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Objectives Settings Popup -->
+                <div class="popup-overlay" id="objectives-popup">
+                    <div class="popup">
+                        <div class="popup-header">
+                            <span class="popup-title">🎯 Objectifs</span>
+                            <button class="popup-close" onclick="closeObjectivesSettings()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="popup-body">
+                            <div class="popup-section">
+                                <div class="popup-section-title">🎯 Objectif de l'année</div>
+                                <textarea id="year-objective-input" class="objective-textarea" placeholder="Quel est ton grand objectif pour cette année ?"></textarea>
+                            </div>
+                            <div class="popup-section">
+                                <div class="popup-section-title">📅 Objectif du mois</div>
+                                <textarea id="month-objective-input" class="objective-textarea" placeholder="Quel est ton objectif pour ce mois ?"></textarea>
+                            </div>
+                            <button class="popup-save-btn" onclick="saveObjectives()">Sauvegarder</button>
+                        </div>
+                    </div>
+                </div>
+
+            <!-- Row 4: 4 cubes -->
+            <div class="widget bento-cube" id="mood-widget">
+                    <div class="widget-header">
+                        <span class="widget-title"><svg class="widget-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> Humeur</span>
+                    </div>
+                    <div class="mood-container">
+                        <button class="mood-btn" data-mood="1" onclick="setMood(1)">😢</button>
+                        <button class="mood-btn" data-mood="2" onclick="setMood(2)">😕</button>
+                        <button class="mood-btn" data-mood="3" onclick="setMood(3)">😐</button>
+                        <button class="mood-btn" data-mood="4" onclick="setMood(4)">🙂</button>
+                        <button class="mood-btn" data-mood="5" onclick="setMood(5)">😄</button>
+                    </div>
+                    <div class="mood-message" id="mood-message">Comment te sens-tu ?</div>
+                    <div class="mood-reflection">
+                        <textarea id="mood-reflection" class="mood-reflection-textarea" 
+                                  placeholder="Réflexion du jour... Qu'est-ce qui t'a marqué aujourd'hui ?"
+                                  oninput="saveMoodReflection()"></textarea>
+                        <div class="mood-reflection-saved" id="mood-reflection-saved">✓ Sauvegardé</div>
+                    </div>
+                </div>
+
+            <div class="widget bento-cube" id="notes-widget">
+                    <div class="widget-header">
+                        <span class="widget-title"><svg class="widget-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Notes</span>
+                    </div>
+                    <div class="notes-quick-add">
+                        <input type="text" id="note-input" class="notes-input" placeholder="Nouvelle note rapide...">
+                        <button class="notes-add-btn" onclick="addQuickNote()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="notes-count" id="notes-count">0 notes</div>
+                    <button class="notes-view-all" onclick="window.location.href='notes.html'">📄 Toutes mes notes</button>
+                </div>
+
+            <div class="widget bento-cube" id="prayer-widget">
+                    <div class="widget-header">
+                        <span class="widget-title"><svg class="widget-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Prières</span>
+                    </div>
+                    <div class="prayer-list" id="prayer-list">
+                        <!-- Prayers rendered here -->
+                    </div>
+                    <div class="prayer-stats" id="prayer-stats"></div>
+            </div>
+
+            <div class="widget bento-cube" id="verse-widget">
+                <div class="widget-header">
+                    <span class="widget-title"><svg class="widget-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg> Verset du jour</span>
+                </div>
+                <div class="verse-container" id="verse-container">
+                    <!-- Verse rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">Sauvegardé ✓</div>
+
+    <script>
+        // ============================================
+        // FIREBASE AUTH & SYNC
+        // ============================================
+        let currentUser = null;
+        let unsubscribeAuth = null;
+
+        // ============================================
+        // AUTH FUNCTIONS
+        // ============================================
+        function switchAuthTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            document.querySelector(`.auth-tab:${tab === 'login' ? 'first-child' : 'last-child'}`).classList.add('active');
+            document.getElementById(`${tab}-form`).classList.add('active');
+            document.querySelectorAll('.auth-error').forEach(e => e.classList.remove('show'));
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+            const btn = document.getElementById('login-btn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Connexion...';
+            errorEl.classList.remove('show');
+            
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                // Auth state listener will handle the rest
+            } catch (error) {
+                let message = 'Erreur de connexion';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    message = 'Email ou mot de passe incorrect';
+                } else if (error.code === 'auth/invalid-email') {
+                    message = 'Email invalide';
+                } else if (error.code === 'auth/too-many-requests') {
+                    message = 'Trop de tentatives, réessaie plus tard';
+                }
+                errorEl.textContent = message;
+                errorEl.classList.add('show');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Se connecter';
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const pseudo = document.getElementById('register-pseudo').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const errorEl = document.getElementById('register-error');
+            const btn = document.getElementById('register-btn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Création...';
+            errorEl.classList.remove('show');
+            
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                
+                // Save user profile to Firestore
+                await db.collection('users').doc(userCredential.user.uid).set({
+                    pseudo: pseudo,
+                    email: email,
+                    accentColor: '#f97316',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Upload current local data to Firebase
+                await uploadAllDataToFirebase(userCredential.user.uid);
+                
+            } catch (error) {
+                let message = 'Erreur lors de l\'inscription';
+                if (error.code === 'auth/email-already-in-use') {
+                    message = 'Cet email est déjà utilisé';
+                } else if (error.code === 'auth/weak-password') {
+                    message = 'Le mot de passe doit contenir au moins 6 caractères';
+                } else if (error.code === 'auth/invalid-email') {
+                    message = 'Email invalide';
+                }
+                errorEl.textContent = message;
+                errorEl.classList.add('show');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Créer un compte';
+            }
+        }
+
+        async function logout() {
+            try {
+                await auth.signOut();
+                currentUser = null;
+                localStorage.removeItem('today_user');
+                closeProfileSettings();
+                showAuthPopup();
+                showToast('Déconnecté');
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        function showAuthPopup() {
+            document.getElementById('auth-popup').classList.remove('hidden');
+        }
+
+        function hideAuthPopup() {
+            document.getElementById('auth-popup').classList.add('hidden');
+        }
+
+        function updateProfileUI() {
+            const pseudo = currentUser?.pseudo || 'Utilisateur';
+            const email = currentUser?.email || '';
+            const avatar = currentUser?.avatar || '';
+            const initial = pseudo.charAt(0).toUpperCase();
+            
+            document.getElementById('profile-initial').textContent = initial;
+            document.getElementById('profile-initial-large').textContent = initial;
+            document.getElementById('profile-pseudo').value = pseudo;
+            document.getElementById('profile-email').value = email;
+            document.getElementById('profile-email').disabled = !!auth.currentUser;
+            
+            if (avatar) {
+                document.querySelector('.profile-avatar-large').innerHTML = `<img src="${avatar}" alt="Avatar">`;
+            }
+        }
+
+        // ============================================
+        // FIREBASE SYNC FUNCTIONS
+        // ============================================
+        function showSyncIndicator(text, type = '') {
+            const el = document.getElementById('sync-indicator');
+            const textEl = document.getElementById('sync-text');
+            textEl.textContent = text;
+            el.className = 'sync-indicator show ' + type;
+            
+            if (type) {
+                setTimeout(() => {
+                    el.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        function hideSyncIndicator() {
+            document.getElementById('sync-indicator').classList.remove('show');
+        }
+
+        async function downloadDataFromFirebase(userId) {
+            showSyncIndicator('Synchronisation...');
+            
+            try {
+                const userDoc = await db.collection('users').doc(userId).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    currentUser = {
+                        uid: userId,
+                        pseudo: userData.pseudo || 'Utilisateur',
+                        email: userData.email || '',
+                        avatar: userData.avatar || '',
+                        accentColor: userData.accentColor || '#f97316'
+                    };
+                    localStorage.setItem('today_user', JSON.stringify(currentUser));
+                    
+                    if (currentUser.accentColor) {
+                        applyAccentColor(currentUser.accentColor);
+                    }
+                }
+                
+                // Load entries
+                const entriesSnap = await db.collection('users').doc(userId).collection('entries').get();
+                if (!entriesSnap.empty) {
+                    const entries = entriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+                }
+                
+                // Load todos
+                const todosSnap = await db.collection('users').doc(userId).collection('todos').get();
+                if (!todosSnap.empty) {
+                    const todos = todosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    localStorage.setItem(TODOS_KEY, JSON.stringify(todos));
+                }
+                
+                // Load prayers
+                const prayersSnap = await db.collection('users').doc(userId).collection('prayers').get();
+                if (!prayersSnap.empty) {
+                    const prayers = prayersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    localStorage.setItem(PRAYER_KEY, JSON.stringify(prayers));
+                }
+                
+                // Load shortcuts
+                const shortcutsSnap = await db.collection('users').doc(userId).collection('shortcuts').orderBy('position').get();
+                if (!shortcutsSnap.empty) {
+                    const shortcuts = shortcutsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    localStorage.setItem('today_shortcuts', JSON.stringify(shortcuts));
+                }
+                
+                // Load notes
+                const notesSnap = await db.collection('users').doc(userId).collection('notes').get();
+                if (!notesSnap.empty) {
+                    const notes = notesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+                }
+                
+                // Load objectives
+                const objDoc = await db.collection('users').doc(userId).collection('settings').doc('objectives').get();
+                if (objDoc.exists) {
+                    localStorage.setItem('objectives', JSON.stringify(objDoc.data()));
+                }
+                
+                // Load habit config
+                const habitConfigDoc = await db.collection('users').doc(userId).collection('settings').doc('habitConfig').get();
+                if (habitConfigDoc.exists) {
+                    localStorage.setItem(HABIT_CONFIG_KEY, JSON.stringify({ habits: habitConfigDoc.data().habits }));
+                }
+                
+                showSyncIndicator('Synchronisé ✓', 'success');
+                renderAll();
+            } catch (error) {
+                console.error('Download sync error:', error);
+                showSyncIndicator('Erreur de sync', 'error');
+            }
+        }
+
+        async function uploadAllDataToFirebase(userId) {
+            showSyncIndicator('Sauvegarde...');
+            
+            try {
+                const batch = db.batch();
+                
+                // Upload entries
+                const entries = getEntries();
+                for (const entry of entries) {
+                    const ref = db.collection('users').doc(userId).collection('entries').doc(entry.id);
+                    batch.set(ref, { text: entry.text, date: entry.date, time: entry.time || '', timestamp: entry.timestamp || '' });
+                }
+                
+                // Upload todos
+                const todos = getTodos();
+                for (const todo of todos) {
+                    const ref = db.collection('users').doc(userId).collection('todos').doc(todo.id);
+                    batch.set(ref, { text: todo.text, done: todo.done });
+                }
+                
+                // Upload prayers
+                const prayers = JSON.parse(localStorage.getItem(PRAYER_KEY) || '[]');
+                for (const prayer of prayers) {
+                    const ref = db.collection('users').doc(userId).collection('prayers').doc(prayer.id);
+                    batch.set(ref, { text: prayer.text, answered: prayer.answered || false });
+                }
+                
+                // Upload shortcuts
+                const shortcuts = JSON.parse(localStorage.getItem('today_shortcuts') || '[]');
+                shortcuts.forEach((s, i) => {
+                    const ref = db.collection('users').doc(userId).collection('shortcuts').doc(s.id);
+                    batch.set(ref, { url: s.url, title: s.title, position: i });
+                });
+                
+                // Upload notes
+                const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '[]');
+                for (const note of notes) {
+                    const ref = db.collection('users').doc(userId).collection('notes').doc(note.id);
+                    batch.set(ref, { title: note.title, content: note.content, updatedAt: note.updatedAt || '' });
+                }
+                
+                // Upload objectives
+                const objectives = JSON.parse(localStorage.getItem('objectives') || '{}');
+                const objRef = db.collection('users').doc(userId).collection('settings').doc('objectives');
+                batch.set(objRef, objectives);
+                
+                // Upload habit config
+                const habitConfig = JSON.parse(localStorage.getItem(HABIT_CONFIG_KEY) || '{}');
+                if (habitConfig.habits) {
+                    const hcRef = db.collection('users').doc(userId).collection('settings').doc('habitConfig');
+                    batch.set(hcRef, { habits: habitConfig.habits });
+                }
+                
+                await batch.commit();
+                showSyncIndicator('Sauvegardé ✓', 'success');
+            } catch (error) {
+                console.error('Upload sync error:', error);
+                showSyncIndicator('Erreur de sauvegarde', 'error');
+            }
+        }
+
+        // Sync individual items
+        async function syncToFirebase(collection, id, data) {
+            if (!auth.currentUser) return;
+            try {
+                await db.collection('users').doc(auth.currentUser.uid).collection(collection).doc(id).set(data, { merge: true });
+            } catch (e) {
+                console.error('Sync error:', e);
+            }
+        }
+
+        async function deleteFromFirebase(collection, id) {
+            if (!auth.currentUser) return;
+            try {
+                await db.collection('users').doc(auth.currentUser.uid).collection(collection).doc(id).delete();
+            } catch (e) {
+                console.error('Delete error:', e);
+            }
+        }
+
+        // Debounce sync to avoid too many requests
+        let syncTimeout = null;
+        function scheduleSync() {
+            if (!auth.currentUser) return;
+            
+            if (syncTimeout) clearTimeout(syncTimeout);
+            syncTimeout = setTimeout(() => {
+                uploadAllDataToFirebase(auth.currentUser.uid);
+            }, 3000);
+        }
+
+        function renderAll() {
+            renderEntries();
+            renderCalendar();
+            renderTodos();
+            updateMementoMori();
+            renderHabits();
+            renderMood();
+            renderNotesCount();
+            renderPrayers();
+            renderDailyVerse();
+            renderShortcuts();
+        }
+
+        // ============================================
+        // STORAGE
+        // ============================================
+        const ENTRIES_KEY = 'today_entries_v2';
+        const TODOS_KEY = 'today_todos_v1';
+        const HABITS_KEY = 'today_habits_v1';
+        const MOOD_KEY = 'today_mood_v1';
+        const NOTES_KEY = 'today_notes_v1';
+        const PRAYER_KEY = 'today_prayer_v1';
+
+        // Entries
+        function getEntries() {
+            try {
+                return JSON.parse(localStorage.getItem(ENTRIES_KEY)) || [];
+            } catch (e) { return []; }
+        }
+
+        function saveEntries(entries) {
+            localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+            scheduleSync();
+        }
+
+        function addEntry(text) {
+            const entries = getEntries();
+            const now = new Date();
+            const entry = {
+                id: Date.now().toString(),
+                text: text.trim(),
+                timestamp: now.toISOString(),
+                date: now.toLocaleDateString('fr-FR')
+            };
+            entries.unshift(entry);
+            saveEntries(entries);
+            return entry;
+        }
+
+        function deleteEntry(id) {
+            saveEntries(getEntries().filter(e => e.id !== id));
+        }
+
+        // Todos
+        function getTodos() {
+            try {
+                return JSON.parse(localStorage.getItem(TODOS_KEY)) || [];
+            } catch (e) { return []; }
+        }
+
+        function saveTodos(todos) {
+            localStorage.setItem(TODOS_KEY, JSON.stringify(todos));
+            scheduleSync();
+        }
+
+        function addTodo(text) {
+            const todos = getTodos();
+            todos.unshift({
+                id: Date.now().toString(),
+                text: text.trim(),
+                done: false,
+                createdAt: new Date().toISOString()
+            });
+            saveTodos(todos);
+        }
+
+        function toggleTodo(id) {
+            const todos = getTodos();
+            const todo = todos.find(t => t.id === id);
+            if (todo) todo.done = !todo.done;
+            saveTodos(todos);
+        }
+
+        function deleteTodo(id) {
+            saveTodos(getTodos().filter(t => t.id !== id));
+        }
+
+        // ============================================
+        // ENTRIES RENDERING
+        // ============================================
+        let currentView = 'today';
+        let selectedDate = null;
+
+        function getEntriesByDate(dateStr) {
+            return getEntries().filter(e => e.date === dateStr);
+        }
+
+        function getTodayStr() {
+            return new Date().toLocaleDateString('fr-FR');
+        }
+
+        function formatTime(isoString) {
+            return new Date(isoString).toLocaleTimeString('fr-FR', { 
+                hour: '2-digit', minute: '2-digit' 
+            });
+        }
+
+        function formatDateHeader(dateStr) {
+            const today = getTodayStr();
+            const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('fr-FR');
+            if (dateStr === today) return "Aujourd'hui";
+            if (dateStr === yesterday) return "Hier";
+            return dateStr;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderEntries() {
+            const container = document.getElementById('entries-list');
+            const title = document.getElementById('section-title');
+            
+            let entries;
+            if (selectedDate) {
+                entries = getEntriesByDate(selectedDate);
+                title.textContent = `${formatDateHeader(selectedDate)} (${entries.length})`;
+            } else if (currentView === 'today') {
+                entries = getEntriesByDate(getTodayStr());
+                title.textContent = `Aujourd'hui (${entries.length})`;
+            } else {
+                entries = getEntries();
+                title.textContent = `Tout (${entries.length})`;
+            }
+
+            if (entries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty">
+                        <p>Aucune entrée.</p>
+                        <p class="empty-hint">↑ Note ce que tu as accompli</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const grouped = {};
+            entries.forEach(entry => {
+                if (!grouped[entry.date]) grouped[entry.date] = [];
+                grouped[entry.date].push(entry);
+            });
+
+            let html = '';
+            for (const [date, dateEntries] of Object.entries(grouped)) {
+                if (currentView === 'all' && !selectedDate) {
+                    html += `<div class="date-header">${formatDateHeader(date)}</div>`;
+                }
+                
+                dateEntries.forEach(entry => {
+                    html += `
+                        <div class="entry" data-id="${entry.id}">
+                            <div class="entry-content">
+                                <span class="entry-time">${formatTime(entry.timestamp)}</span>
+                                <p class="entry-text">${escapeHtml(entry.text)}</p>
+                            </div>
+                            <div class="entry-actions">
+                                <button class="entry-action-btn edit" onclick="handleEditEntry('${entry.id}')" title="Modifier">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                </button>
+                                <button class="entry-action-btn delete" onclick="handleDeleteEntry('${entry.id}')" title="Supprimer">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // ============================================
+        // CALENDAR
+        // ============================================
+        let calendarDate = new Date();
+        const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                           'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+
+        function getEntriesDates() {
+            const dates = new Set();
+            getEntries().forEach(e => dates.add(e.date));
+            return dates;
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            const monthLabel = document.getElementById('calendar-month');
+            
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            
+            monthLabel.textContent = `${monthNames[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+            const today = new Date();
+            const todayStr = today.toLocaleDateString('fr-FR');
+            const entriesDates = getEntriesDates();
+
+            let html = dayNames.map(d => `<div class="calendar-day-name">${d}</div>`).join('');
+
+            // Previous month days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = daysInPrevMonth - i;
+                html += `<div class="calendar-day other-month">${day}</div>`;
+            }
+
+            // Current month days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dateStr = date.toLocaleDateString('fr-FR');
+                const isToday = dateStr === todayStr;
+                const isSelected = dateStr === selectedDate;
+                const hasEntries = entriesDates.has(dateStr);
+
+                let classes = 'calendar-day';
+                if (isToday) classes += ' today';
+                if (isSelected) classes += ' selected';
+                if (hasEntries) classes += ' has-entries';
+
+                html += `<div class="${classes}" data-date="${dateStr}">${day}</div>`;
+            }
+
+            // Next month days
+            const totalCells = firstDay + daysInMonth;
+            const remaining = 42 - totalCells;
+            for (let day = 1; day <= remaining && remaining < 14; day++) {
+                html += `<div class="calendar-day other-month">${day}</div>`;
+            }
+
+            grid.innerHTML = html;
+
+            // Add click handlers
+            grid.querySelectorAll('.calendar-day:not(.other-month)').forEach(el => {
+                el.addEventListener('click', () => {
+                    const dateStr = el.dataset.date;
+                    if (dateStr) selectDate(dateStr);
+                });
+            });
+        }
+
+        function selectDate(dateStr) {
+            selectedDate = dateStr;
+            renderCalendar();
+            renderEntries();
+        }
+
+        function clearSelection() {
+            selectedDate = null;
+            renderCalendar();
+            renderEntries();
+        }
+
+        // ============================================
+        // TODO LIST
+        // ============================================
+        function renderTodos() {
+            const container = document.getElementById('todo-list');
+            const stats = document.getElementById('todo-stats');
+            const todos = getTodos();
+
+            if (todos.length === 0) {
+                container.innerHTML = '<div class="todo-empty">Aucune tâche</div>';
+                stats.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = todos.map(todo => `
+                <div class="todo-item ${todo.done ? 'done' : ''}" data-id="${todo.id}">
+                    <div class="todo-checkbox" onclick="handleToggleTodo('${todo.id}')"></div>
+                    <span class="todo-text">${escapeHtml(todo.text)}</span>
+                    <button class="todo-delete" onclick="handleDeleteTodo('${todo.id}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+
+            const done = todos.filter(t => t.done).length;
+            stats.innerHTML = `<span>${done}/${todos.length} terminées</span>`;
+        }
+
+        // ============================================
+        // MEMENTO MORI
+        // ============================================
+        function updateMementoMori() {
+            const now = new Date();
+            const year = now.getFullYear();
+            
+            // Year progress
+            const startOfYear = new Date(year, 0, 1);
+            const endOfYear = new Date(year + 1, 0, 1);
+            const yearProgress = ((now - startOfYear) / (endOfYear - startOfYear)) * 100;
+            
+            document.getElementById('year-percent').textContent = yearProgress.toFixed(1) + '%';
+            document.getElementById('year-progress').style.width = yearProgress + '%';
+            
+            // Month progress
+            const month = now.getMonth();
+            const startOfMonth = new Date(year, month, 1);
+            const endOfMonth = new Date(year, month + 1, 1);
+            const monthProgress = ((now - startOfMonth) / (endOfMonth - startOfMonth)) * 100;
+            
+            const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
+                               'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+            
+            document.getElementById('month-label').textContent = monthNames[month];
+            document.getElementById('month-percent').textContent = monthProgress.toFixed(1) + '%';
+            document.getElementById('month-progress').style.width = monthProgress + '%';
+            
+            // Render objectives
+            renderObjectives();
+        }
+
+        // ============================================
+        // HABIT TRACKER
+        // ============================================
+        const HABIT_CONFIG_KEY = 'today_habit_config_v1';
+        let currentHabitCategory = 'principal';
+        let editingCategory = 'principal';
+
+        const DEFAULT_HABITS = {
+            principal: [
+                { id: 'water', icon: '💧', text: "Boire 2L d'eau" },
+                { id: 'read', icon: '📚', text: 'Lire 20 min' },
+                { id: 'journal', icon: '✍️', text: 'Écrire dans TODAY' }
+            ],
+            sport: [
+                { id: 'workout', icon: '💪', text: 'Entraînement' },
+                { id: 'walk', icon: '🚶', text: 'Marcher 30 min' },
+                { id: 'stretch', icon: '🤸', text: 'Étirements' }
+            ],
+            bienetre: [
+                { id: 'meditate', icon: '🧘', text: 'Méditer 5 min' },
+                { id: 'sleep', icon: '😴', text: 'Dormir 8h' },
+                { id: 'noscreen', icon: '📵', text: 'Pas d\'écran après 22h' }
+            ]
+        };
+
+        const CATEGORY_LABELS = {
+            principal: '🎯 Principal',
+            sport: '🏃 Sport',
+            bienetre: '🌿 Bien-être'
+        };
+
+        function getHabitConfig() {
+            try {
+                const config = JSON.parse(localStorage.getItem(HABIT_CONFIG_KEY));
+                if (config && config.habits) return config.habits;
+                return JSON.parse(JSON.stringify(DEFAULT_HABITS));
+            } catch (e) {
+                return JSON.parse(JSON.stringify(DEFAULT_HABITS));
+            }
+        }
+
+        function saveHabitConfig(habits) {
+            localStorage.setItem(HABIT_CONFIG_KEY, JSON.stringify({ habits }));
+        }
+
+        function getHabits() {
+            try {
+                const data = JSON.parse(localStorage.getItem(HABITS_KEY));
+                if (data && data.date === getTodayStr()) {
+                    return data.habits;
+                }
+                return {};
+            } catch (e) { return {}; }
+        }
+
+        function saveHabits(habits) {
+            localStorage.setItem(HABITS_KEY, JSON.stringify({
+                date: getTodayStr(),
+                habits: habits
+            }));
+        }
+
+        function toggleHabit(habitId) {
+            const habits = getHabits();
+            habits[habitId] = !habits[habitId];
+            saveHabits(habits);
+            renderHabits();
+        }
+
+        function setHabitCategory(category) {
+            currentHabitCategory = category;
+            renderHabits();
+        }
+
+        function renderHabits() {
+            const config = getHabitConfig();
+            const completedHabits = getHabits();
+            const categoryHabits = config[currentHabitCategory] || [];
+
+            // Render category tabs
+            const categoriesHtml = Object.keys(CATEGORY_LABELS).map(cat => `
+                <button class="habit-category-btn ${cat === currentHabitCategory ? 'active' : ''}" 
+                        onclick="setHabitCategory('${cat}')">
+                    ${CATEGORY_LABELS[cat].split(' ')[0]}
+                </button>
+            `).join('');
+            document.getElementById('habit-categories').innerHTML = categoriesHtml;
+
+            // Render habits
+            const container = document.getElementById('habit-list');
+            if (categoryHabits.length === 0) {
+                container.innerHTML = '<div class="habit-empty">Aucune habitude. Clique sur ⚙️ pour en ajouter.</div>';
+            } else {
+                container.innerHTML = categoryHabits.map(habit => `
+                    <div class="habit-item ${completedHabits[habit.id] ? 'done' : ''}" data-habit="${habit.id}">
+                        <div class="habit-checkbox" onclick="toggleHabit('${habit.id}')"></div>
+                        <span class="habit-icon">${habit.icon}</span>
+                        <span class="habit-text">${habit.text}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Stats
+            const done = categoryHabits.filter(h => completedHabits[h.id]).length;
+            const total = categoryHabits.length;
+            document.getElementById('habit-stats').innerHTML = total > 0 
+                ? `<span>${done}/${total}</span><span>Reset chaque matin</span>` 
+                : '';
+        }
+
+        // ===== OBJECTIVES =====
+        function getObjectives() {
+            return JSON.parse(localStorage.getItem('objectives') || '{"year": "", "month": ""}');
+        }
+
+        function saveObjectivesData(data) {
+            localStorage.setItem('objectives', JSON.stringify(data));
+        }
+
+        function renderObjectives() {
+            const objectives = getObjectives();
+            const yearEl = document.getElementById('year-objective');
+            const monthEl = document.getElementById('month-objective');
+            
+            if (objectives.year) {
+                yearEl.textContent = objectives.year;
+                yearEl.classList.remove('empty');
+            } else {
+                yearEl.textContent = 'Non défini';
+                yearEl.classList.add('empty');
+            }
+            
+            if (objectives.month) {
+                monthEl.textContent = objectives.month;
+                monthEl.classList.remove('empty');
+            } else {
+                monthEl.textContent = 'Non défini';
+                monthEl.classList.add('empty');
+            }
+        }
+
+        function openObjectivesSettings() {
+            const objectives = getObjectives();
+            document.getElementById('year-objective-input').value = objectives.year || '';
+            document.getElementById('month-objective-input').value = objectives.month || '';
+            document.getElementById('objectives-popup').classList.add('show');
+        }
+
+        function closeObjectivesSettings() {
+            document.getElementById('objectives-popup').classList.remove('show');
+        }
+
+        function saveObjectives() {
+            const yearObjective = document.getElementById('year-objective-input').value.trim();
+            const monthObjective = document.getElementById('month-objective-input').value.trim();
+            
+            saveObjectivesData({
+                year: yearObjective,
+                month: monthObjective
+            });
+            
+            renderObjectives();
+            closeObjectivesSettings();
+            showToast('Objectifs sauvegardés ✓');
+        }
+
+        // Habit Settings Popup
+        function openHabitSettings() {
+            editingCategory = currentHabitCategory;
+            renderHabitPopup();
+            document.getElementById('habit-popup').classList.add('show');
+        }
+
+        function closeHabitSettings() {
+            document.getElementById('habit-popup').classList.remove('show');
+            renderHabits();
+        }
+
+        function setEditingCategory(category) {
+            editingCategory = category;
+            renderHabitPopup();
+        }
+
+        function renderHabitPopup() {
+            const config = getHabitConfig();
+            
+            // Category tabs
+            const tabsHtml = Object.keys(CATEGORY_LABELS).map(cat => `
+                <button class="popup-category-tab ${cat === editingCategory ? 'active' : ''}" 
+                        onclick="setEditingCategory('${cat}')">
+                    ${CATEGORY_LABELS[cat]}
+                </button>
+            `).join('');
+            document.getElementById('popup-category-tabs').innerHTML = tabsHtml;
+
+            // Habit list
+            const habits = config[editingCategory] || [];
+            const habitsHtml = habits.map((habit, index) => `
+                <div class="popup-habit-item" data-index="${index}">
+                    <input type="text" class="popup-habit-input icon-input" value="${habit.icon}" 
+                           onchange="updateHabit(${index}, 'icon', this.value)" maxlength="2">
+                    <div class="popup-habit-inputs">
+                        <input type="text" class="popup-habit-input" value="${habit.text}" 
+                               onchange="updateHabit(${index}, 'text', this.value)" placeholder="Nom de l'habitude">
+                    </div>
+                    <button class="popup-habit-delete" onclick="deleteHabit(${index})">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+            document.getElementById('popup-habit-list').innerHTML = habitsHtml;
+        }
+
+        function updateHabit(index, field, value) {
+            const config = getHabitConfig();
+            if (config[editingCategory] && config[editingCategory][index]) {
+                config[editingCategory][index][field] = value;
+                saveHabitConfig(config);
+            }
+        }
+
+        function deleteHabit(index) {
+            const config = getHabitConfig();
+            if (config[editingCategory]) {
+                config[editingCategory].splice(index, 1);
+                saveHabitConfig(config);
+                renderHabitPopup();
+            }
+        }
+
+        function addNewHabit() {
+            const config = getHabitConfig();
+            if (!config[editingCategory]) {
+                config[editingCategory] = [];
+            }
+            config[editingCategory].push({
+                id: 'habit_' + Date.now(),
+                icon: '⭐',
+                text: 'Nouvelle habitude'
+            });
+            saveHabitConfig(config);
+            renderHabitPopup();
+        }
+
+        // ============================================
+        // MOOD TRACKER
+        // ============================================
+        function getMoodHistory() {
+            try {
+                return JSON.parse(localStorage.getItem(MOOD_KEY)) || {};
+            } catch (e) { return {}; }
+        }
+
+        function getMood(dateStr = null) {
+            const history = getMoodHistory();
+            const date = dateStr || getTodayStr();
+            const data = history[date];
+            // Support old format (just number) and new format (object)
+            if (typeof data === 'number') return data;
+            return data ? data.level : null;
+        }
+
+        function getMoodData(dateStr = null) {
+            const history = getMoodHistory();
+            const date = dateStr || getTodayStr();
+            const data = history[date];
+            // Support old format
+            if (typeof data === 'number') {
+                return { level: data, reflection: '' };
+            }
+            return data || null;
+        }
+
+        function saveMood(level) {
+            const history = getMoodHistory();
+            const today = getTodayStr();
+            const existing = history[today];
+            
+            // Preserve reflection if it exists
+            const reflection = (existing && typeof existing === 'object') ? existing.reflection : '';
+            
+            history[today] = {
+                level: level,
+                reflection: reflection
+            };
+            localStorage.setItem(MOOD_KEY, JSON.stringify(history));
+        }
+
+        let reflectionSaveTimeout;
+        function saveMoodReflection() {
+            clearTimeout(reflectionSaveTimeout);
+            reflectionSaveTimeout = setTimeout(() => {
+                const history = getMoodHistory();
+                const today = getTodayStr();
+                const reflection = document.getElementById('mood-reflection').value;
+                const existing = history[today];
+                
+                // Get current level or default to null
+                const level = existing ? (typeof existing === 'number' ? existing : existing.level) : null;
+                
+                history[today] = {
+                    level: level,
+                    reflection: reflection
+                };
+                localStorage.setItem(MOOD_KEY, JSON.stringify(history));
+                
+                // Show saved indicator
+                const savedEl = document.getElementById('mood-reflection-saved');
+                savedEl.classList.add('show');
+                setTimeout(() => savedEl.classList.remove('show'), 2000);
+            }, 500);
+        }
+
+        function setMood(level) {
+            saveMood(level);
+            renderMood();
+        }
+
+        function renderMood() {
+            const mood = getMood();
+            const moodData = getMoodData();
+            const messages = {
+                1: "Courage, demain sera meilleur 💙",
+                2: "Un peu difficile aujourd'hui",
+                3: "Journée tranquille",
+                4: "Ça va bien !",
+                5: "Super journée ! 🌟"
+            };
+            
+            document.querySelectorAll('.mood-btn').forEach(btn => {
+                const level = parseInt(btn.dataset.mood);
+                btn.classList.toggle('selected', level === mood);
+            });
+            
+            const messageEl = document.getElementById('mood-message');
+            if (mood) {
+                messageEl.textContent = messages[mood];
+                messageEl.classList.add('active');
+            } else {
+                messageEl.textContent = 'Comment te sens-tu ?';
+                messageEl.classList.remove('active');
+            }
+            
+            // Load reflection
+            const reflectionEl = document.getElementById('mood-reflection');
+            if (moodData && moodData.reflection) {
+                reflectionEl.value = moodData.reflection;
+            } else {
+                reflectionEl.value = '';
+            }
+        }
+
+        // ============================================
+        // NOTES
+        // ============================================
+        function getNotes() {
+            try {
+                return JSON.parse(localStorage.getItem(NOTES_KEY)) || [];
+            } catch (e) { return []; }
+        }
+
+        function saveNotes(notes) {
+            localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+        }
+
+        function addQuickNote() {
+            const input = document.getElementById('note-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const notes = getNotes();
+            notes.unshift({
+                id: Date.now().toString(),
+                text: text,
+                timestamp: new Date().toISOString(),
+                date: getTodayStr()
+            });
+            saveNotes(notes);
+            input.value = '';
+            renderNotesCount();
+            showToast('Note ajoutée ✓');
+        }
+
+        function renderNotesCount() {
+            const notes = getNotes();
+            document.getElementById('notes-count').textContent = `${notes.length} note${notes.length !== 1 ? 's' : ''}`;
+        }
+
+        // ============================================
+        // PRAYERS (Dubai Times)
+        // ============================================
+        const DUBAI_PRAYER_TIMES = {
+            Fajr: '05:15',
+            Dhuhr: '12:20',
+            Asr: '15:35',
+            Maghrib: '18:00',
+            Isha: '19:30'
+        };
+
+        function getPrayers() {
+            try {
+                const data = JSON.parse(localStorage.getItem(PRAYER_KEY));
+                if (data && data.date === getTodayStr()) {
+                    return data.prayers;
+                }
+                return {};
+            } catch (e) { return {}; }
+        }
+
+        function savePrayers(prayers) {
+            localStorage.setItem(PRAYER_KEY, JSON.stringify({
+                date: getTodayStr(),
+                prayers: prayers
+            }));
+        }
+
+        function togglePrayer(prayerName) {
+            const prayers = getPrayers();
+            prayers[prayerName] = !prayers[prayerName];
+            savePrayers(prayers);
+            renderPrayers();
+        }
+
+        function renderPrayers() {
+            const prayers = getPrayers();
+            const prayerNames = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+            const prayerEmojis = {
+                Fajr: '🌅',
+                Dhuhr: '☀️',
+                Asr: '🌤️',
+                Maghrib: '🌆',
+                Isha: '🌙'
+            };
+
+            const html = prayerNames.map(name => `
+                <div class="prayer-item ${prayers[name] ? 'done' : ''}" data-prayer="${name}">
+                    <div class="prayer-checkbox" onclick="togglePrayer('${name}')"></div>
+                    <div class="prayer-info">
+                        <div class="prayer-name">${prayerEmojis[name]} ${name}</div>
+                        <div class="prayer-time">${DUBAI_PRAYER_TIMES[name]}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('prayer-list').innerHTML = html;
+
+            // Stats
+            const done = prayerNames.filter(n => prayers[n]).length;
+            document.getElementById('prayer-stats').textContent = `${done}/5 prières accomplies`;
+        }
+
+        // ============================================
+        // QURAN VERSE
+        // ============================================
+        const QURAN_VERSES = [
+            {
+                arabic: 'وَلَا تَيْأَسُوا مِن رَّوْحِ اللَّهِ ۖ إِنَّهُ لَا يَيْأَسُ مِن رَّوْحِ اللَّهِ إِلَّا الْقَوْمُ الْكَافِرُونَ',
+                translation: 'Ne désespérez pas de la miséricorde d\'Allah. Ce sont seulement les gens mécréants qui désespèrent de la miséricorde d\'Allah.',
+                reference: 'Sourate Yusuf (12:87)'
+            },
+            {
+                arabic: 'فَإِنَّ مَعَ الْعُسْرِ يُسْرًا ۝ إِنَّ مَعَ الْعُسْرِ يُسْرًا',
+                translation: 'Après la difficulté vient assurément la facilité. Oui, après la difficulté vient la facilité.',
+                reference: 'Sourate Ash-Sharh (94:5-6)'
+            },
+            {
+                arabic: 'وَقُل رَّبِّ زِدْنِي عِلْمًا',
+                translation: 'Et dis : "Ô mon Seigneur, accroît mes connaissances !"',
+                reference: 'Sourate Ta-Ha (20:114)'
+            },
+            {
+                arabic: 'إِنَّ اللَّهَ مَعَ الصَّابِرِينَ',
+                translation: 'Certes, Allah est avec les endurants.',
+                reference: 'Sourate Al-Baqarah (2:153)'
+            },
+            {
+                arabic: 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ',
+                translation: 'Seigneur ! Accorde-nous belle part ici-bas, et belle part aussi dans l\'au-delà; et protège-nous du châtiment du Feu !',
+                reference: 'Sourate Al-Baqarah (2:201)'
+            },
+            {
+                arabic: 'وَمَن يَتَّقِ اللَّهَ يَجْعَل لَّهُ مَخْرَجًا',
+                translation: 'Quiconque craint Allah, Il lui donnera une issue favorable.',
+                reference: 'Sourate At-Talaq (65:2)'
+            },
+            {
+                arabic: 'فَاذْكُرُونِي أَذْكُرْكُمْ',
+                translation: 'Souvenez-vous de Moi donc. Je me souviendrai de vous.',
+                reference: 'Sourate Al-Baqarah (2:152)'
+            }
+        ];
+
+        function getDayOfYear() {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), 0, 0);
+            const diff = now - start;
+            const oneDay = 1000 * 60 * 60 * 24;
+            return Math.floor(diff / oneDay);
+        }
+
+        function renderDailyVerse() {
+            const dayIndex = getDayOfYear() % QURAN_VERSES.length;
+            const verse = QURAN_VERSES[dayIndex];
+            
+            document.getElementById('verse-container').innerHTML = `
+                <div class="verse-arabic">${verse.arabic}</div>
+                <div class="verse-translation">${verse.translation}</div>
+                <div class="verse-reference">— ${verse.reference}</div>
+            `;
+        }
+
+        // ============================================
+        // TIMER
+        // ============================================
+        let timerState = {
+            totalSeconds: 25 * 60,
+            remainingSeconds: 25 * 60,
+            isRunning: false,
+            intervalId: null
+        };
+
+        const TIMER_CIRCUMFERENCE = 2 * Math.PI * 54; // 339.292
+
+        function formatTimerTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimerDisplay() {
+            const display = document.getElementById('timer-display');
+            const progress = document.getElementById('timer-progress');
+            const widget = document.getElementById('timer-widget');
+            
+            display.textContent = formatTimerTime(timerState.remainingSeconds);
+            
+            // Update progress ring
+            const progressPercent = timerState.remainingSeconds / timerState.totalSeconds;
+            const offset = TIMER_CIRCUMFERENCE * (1 - progressPercent);
+            progress.style.strokeDashoffset = offset;
+            
+            // Update state classes
+            widget.classList.toggle('timer-running', timerState.isRunning);
+            widget.classList.toggle('timer-finished', timerState.remainingSeconds === 0);
+        }
+
+        function startTimer() {
+            if (timerState.remainingSeconds <= 0) return;
+            
+            timerState.isRunning = true;
+            document.getElementById('timer-start').style.display = 'none';
+            document.getElementById('timer-pause').style.display = 'flex';
+            
+            timerState.intervalId = setInterval(() => {
+                timerState.remainingSeconds--;
+                updateTimerDisplay();
+                
+                if (timerState.remainingSeconds <= 0) {
+                    timerComplete();
+                }
+            }, 1000);
+            
+            updateTimerDisplay();
+        }
+
+        function pauseTimer() {
+            timerState.isRunning = false;
+            clearInterval(timerState.intervalId);
+            document.getElementById('timer-start').style.display = 'flex';
+            document.getElementById('timer-pause').style.display = 'none';
+            updateTimerDisplay();
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            timerState.remainingSeconds = timerState.totalSeconds;
+            document.getElementById('timer-widget').classList.remove('timer-finished');
+            updateTimerDisplay();
+        }
+
+        function setTimerPreset(minutes) {
+            pauseTimer();
+            timerState.totalSeconds = minutes * 60;
+            timerState.remainingSeconds = minutes * 60;
+            
+            // Update active state on preset buttons
+            document.querySelectorAll('.timer-preset').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.time) === minutes);
+            });
+            
+            document.getElementById('timer-widget').classList.remove('timer-finished');
+            updateTimerDisplay();
+        }
+
+        function timerComplete() {
+            pauseTimer();
+            timerState.remainingSeconds = 0;
+            updateTimerDisplay();
+            
+            // Play notification sound 3 times
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Play a pleasant chime sequence
+                const playTone = (freq, start, duration) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.value = freq;
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.3, start);
+                    gain.gain.exponentialRampToValueAtTime(0.01, start + duration);
+                    osc.start(start);
+                    osc.stop(start + duration);
+                };
+                
+                const now = audioCtx.currentTime;
+                // Play chime 3 times with pauses
+                for (let i = 0; i < 3; i++) {
+                    const offset = i * 0.8; // 0.8s between each chime
+                    playTone(523.25, now + offset, 0.2);        // C5
+                    playTone(659.25, now + offset + 0.15, 0.2); // E5
+                    playTone(783.99, now + offset + 0.3, 0.3);  // G5
+                }
+            } catch (e) {}
+            
+            // Show toast with label if set
+            const label = document.getElementById('timer-label').value.trim();
+            showToast(label ? `⏱ Terminé: ${label}` : '⏱ Temps écoulé !');
+        }
+
+        function initTimer() {
+            // Preset buttons
+            document.querySelectorAll('.timer-preset').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    setTimerPreset(parseInt(btn.dataset.time));
+                });
+            });
+            
+            // Control buttons
+            document.getElementById('timer-start').addEventListener('click', startTimer);
+            document.getElementById('timer-pause').addEventListener('click', pauseTimer);
+            document.getElementById('timer-reset').addEventListener('click', resetTimer);
+            
+            // Initial display
+            updateTimerDisplay();
+        }
+
+        // ============================================
+        // TOAST
+        // ============================================
+        function showToast(message = 'Sauvegardé ✓') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // ============================================
+        // EVENT HANDLERS
+        // ============================================
+        function handleSaveEntry() {
+            const input = document.getElementById('entry-input');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            addEntry(text);
+            input.value = '';
+            renderEntries();
+            renderCalendar();
+            showToast('Sauvegardé ✓');
+            input.focus();
+        }
+
+        function handleDeleteEntry(id) {
+            deleteEntry(id);
+            renderEntries();
+            renderCalendar();
+        }
+
+        function handleEditEntry(id) {
+            const entries = getEntries();
+            const entry = entries.find(e => e.id === id);
+            if (!entry) return;
+
+            const entryEl = document.querySelector(`.entry[data-id="${id}"]`);
+            const contentEl = entryEl.querySelector('.entry-content');
+            const actionsEl = entryEl.querySelector('.entry-actions');
+
+            // Hide actions
+            actionsEl.style.display = 'none';
+
+            // Get current date/time for inputs
+            const entryDate = new Date(entry.timestamp);
+            const dateValue = entryDate.toISOString().split('T')[0];
+            const timeValue = entryDate.toTimeString().slice(0, 5);
+
+            // Replace content with textarea and date/time inputs
+            contentEl.innerHTML = `
+                <textarea class="entry-edit-textarea" id="edit-textarea-${id}">${escapeHtml(entry.text)}</textarea>
+                <div class="entry-edit-datetime">
+                    <input type="date" class="entry-edit-date" id="edit-date-${id}" value="${dateValue}">
+                    <input type="time" class="entry-edit-time" id="edit-time-${id}" value="${timeValue}">
+                </div>
+                <div class="entry-edit-actions">
+                    <button class="entry-edit-btn save" onclick="saveEditEntry('${id}')">✓ Enregistrer</button>
+                    <button class="entry-edit-btn cancel" onclick="cancelEditEntry('${id}')">Annuler</button>
+                </div>
+            `;
+
+            // Focus textarea
+            const textarea = document.getElementById(`edit-textarea-${id}`);
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+
+        function saveEditEntry(id) {
+            const textarea = document.getElementById(`edit-textarea-${id}`);
+            const dateInput = document.getElementById(`edit-date-${id}`);
+            const timeInput = document.getElementById(`edit-time-${id}`);
+            const newText = textarea.value.trim();
+            
+            if (!newText) {
+                showToast('⚠️ Le texte ne peut pas être vide');
+                return;
+            }
+
+            const entries = getEntries();
+            const entry = entries.find(e => e.id === id);
+            if (entry) {
+                entry.text = newText;
+                
+                // Update date/time if changed
+                if (dateInput && timeInput) {
+                    const newDateTime = new Date(`${dateInput.value}T${timeInput.value}`);
+                    if (!isNaN(newDateTime.getTime())) {
+                        entry.timestamp = newDateTime.toISOString();
+                        entry.date = newDateTime.toLocaleDateString('fr-FR');
+                    }
+                }
+                
+                saveEntries(entries);
+                showToast('Modifié ✓');
+                renderEntries();
+                renderCalendar();
+            }
+        }
+
+        function cancelEditEntry(id) {
+            renderEntries();
+        }
+
+        function handleAddTodo() {
+            const input = document.getElementById('todo-input');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            addTodo(text);
+            input.value = '';
+            renderTodos();
+            input.focus();
+        }
+
+        function handleToggleTodo(id) {
+            toggleTodo(id);
+            renderTodos();
+        }
+
+        function handleDeleteTodo(id) {
+            deleteTodo(id);
+            renderTodos();
+        }
+
+        function openAnalyse() {
+            window.location.href = 'analyse.html';
+        }
+
+        // ===== PROFILE SETTINGS =====
+        const DEFAULT_ACCENT = '#f97316';
+        let selectedAccentColor = DEFAULT_ACCENT;
+
+        function getProfile() {
+            return JSON.parse(localStorage.getItem('userProfile') || '{"pseudo": "", "email": "", "avatar": "", "accentColor": "#f97316"}');
+        }
+
+        function saveProfileData(data) {
+            localStorage.setItem('userProfile', JSON.stringify(data));
+        }
+
+        function hexToRgb(hex) {
+            // Remove # if present
+            hex = hex.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            return `${r}, ${g}, ${b}`;
+        }
+
+        function lightenColor(hex, percent) {
+            hex = hex.replace('#', '');
+            let r = parseInt(hex.substring(0, 2), 16);
+            let g = parseInt(hex.substring(2, 4), 16);
+            let b = parseInt(hex.substring(4, 6), 16);
+            
+            r = Math.min(255, Math.floor(r + (255 - r) * percent));
+            g = Math.min(255, Math.floor(g + (255 - g) * percent));
+            b = Math.min(255, Math.floor(b + (255 - b) * percent));
+            
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+
+        function applyAccentColor(color) {
+            document.documentElement.style.setProperty('--accent', color);
+            document.documentElement.style.setProperty('--accent-glow', hexToRgb(color));
+            document.documentElement.style.setProperty('--accent-light', lightenColor(color, 0.25));
+            document.documentElement.style.setProperty('--accent-hover', lightenColor(color, 0.15));
+        }
+
+        function renderProfileButton() {
+            const profile = getProfile();
+            const btn = document.getElementById('profile-btn');
+            const initial = document.getElementById('profile-initial');
+            
+            if (profile.avatar) {
+                btn.innerHTML = `<img src="${profile.avatar}" alt="Profile">`;
+            } else if (profile.pseudo) {
+                initial.textContent = profile.pseudo.charAt(0).toUpperCase();
+            } else {
+                initial.textContent = '?';
+            }
+        }
+
+        function openProfileSettings() {
+            const profile = getProfile();
+            document.getElementById('profile-pseudo').value = profile.pseudo || '';
+            document.getElementById('profile-email').value = profile.email || '';
+            selectedAccentColor = profile.accentColor || DEFAULT_ACCENT;
+            
+            // Update avatar in popup
+            const avatarLarge = document.querySelector('.profile-avatar-large');
+            if (profile.avatar) {
+                avatarLarge.innerHTML = `<img src="${profile.avatar}" alt="Profile"><div class="profile-avatar-edit">Modifier</div>`;
+            } else {
+                const initialText = profile.pseudo ? profile.pseudo.charAt(0).toUpperCase() : '?';
+                avatarLarge.innerHTML = `<span class="profile-initial-large">${initialText}</span><div class="profile-avatar-edit">Modifier</div>`;
+            }
+            
+            // Update color picker selection
+            document.querySelectorAll('.color-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.color === selectedAccentColor);
+            });
+            
+            document.getElementById('profile-popup').classList.add('active');
+        }
+
+        function closeProfileSettings() {
+            document.getElementById('profile-popup').classList.remove('active');
+        }
+
+        function selectAccentColor(color) {
+            selectedAccentColor = color;
+            document.querySelectorAll('.color-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.color === color);
+            });
+            // Preview the color immediately
+            applyAccentColor(color);
+        }
+
+        function handleAvatarChange(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const avatarLarge = document.querySelector('.profile-avatar-large');
+                    avatarLarge.innerHTML = `<img src="${e.target.result}" alt="Profile"><div class="profile-avatar-edit">Modifier</div>`;
+                    // Store temporarily
+                    avatarLarge.dataset.newAvatar = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function saveProfile() {
+            const profile = getProfile();
+            const pseudo = document.getElementById('profile-pseudo').value.trim();
+            const avatarLarge = document.querySelector('.profile-avatar-large');
+            const newAvatar = avatarLarge.dataset.newAvatar;
+            
+            profile.pseudo = pseudo;
+            profile.accentColor = selectedAccentColor;
+            if (newAvatar) {
+                profile.avatar = newAvatar;
+            }
+            
+            saveProfileData(profile);
+            applyAccentColor(selectedAccentColor);
+            
+            // Update Firebase if logged in
+            if (auth.currentUser) {
+                currentUser = {
+                    ...currentUser,
+                    pseudo: pseudo,
+                    accentColor: selectedAccentColor
+                };
+                if (newAvatar) currentUser.avatar = newAvatar;
+                
+                localStorage.setItem('today_user', JSON.stringify(currentUser));
+                
+                try {
+                    await db.collection('users').doc(auth.currentUser.uid).update({
+                        pseudo: pseudo,
+                        accentColor: selectedAccentColor,
+                        avatar: currentUser.avatar || ''
+                    });
+                } catch (e) {
+                    console.error('Error saving profile to Firebase:', e);
+                }
+            }
+            
+            renderProfileButton();
+            closeProfileSettings();
+            showToast('Profil sauvegardé ✓');
+        }
+
+        // Use auth logout if available
+        // (logout function already defined in auth section)
+
+        // Initialize profile on load
+        function initProfile() {
+            const profile = getProfile();
+            applyAccentColor(profile.accentColor || DEFAULT_ACCENT);
+            renderProfileButton();
+        }
+
+        // ===== SHORTCUTS =====
+        function getShortcuts() {
+            return JSON.parse(localStorage.getItem('shortcuts') || '[]');
+        }
+
+        function saveShortcuts(shortcuts) {
+            localStorage.setItem('shortcuts', JSON.stringify(shortcuts));
+        }
+
+        function getFaviconUrl(url) {
+            try {
+                const fullUrl = url.toLowerCase();
+                
+                // Specific URL pattern matching for Google services
+                if (fullUrl.includes('mail.google') || fullUrl.includes('gmail')) {
+                    return 'https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico';
+                }
+                if (fullUrl.includes('sheets.google') || fullUrl.includes('docs.google.com/spreadsheets')) {
+                    return 'https://ssl.gstatic.com/docs/spreadsheets/favicon3.ico';
+                }
+                if (fullUrl.includes('docs.google.com/document')) {
+                    return 'https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico';
+                }
+                if (fullUrl.includes('docs.google.com/presentation') || fullUrl.includes('slides.google')) {
+                    return 'https://ssl.gstatic.com/docs/presentations/images/favicon5.ico';
+                }
+                if (fullUrl.includes('drive.google')) {
+                    return 'https://ssl.gstatic.com/images/branding/product/2x/drive_2020q4_48dp.png';
+                }
+                if (fullUrl.includes('calendar.google')) {
+                    return 'https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_31_2x.png';
+                }
+                if (fullUrl.includes('meet.google')) {
+                    return 'https://fonts.gstatic.com/s/i/productlogos/meet_2020q4/v1/web-96dp/logo_meet_2020q4_color_2x_web_96dp.png';
+                }
+                if (fullUrl.includes('youtube.com') || fullUrl.includes('youtu.be')) {
+                    return 'https://www.gstatic.com/youtube/img/branding/favicon/favicon_144x144.png';
+                }
+                if (fullUrl.includes('github.com')) {
+                    return 'https://github.githubassets.com/favicons/favicon.svg';
+                }
+                if (fullUrl.includes('chatgpt') || fullUrl.includes('chat.openai')) {
+                    return 'https://cdn.oaistatic.com/assets/apple-touch-icon-mz9nytnj.webp';
+                }
+                if (fullUrl.includes('notion.so') || fullUrl.includes('notion.com')) {
+                    return 'https://www.notion.so/images/favicon.ico';
+                }
+                if (fullUrl.includes('figma.com')) {
+                    return 'https://static.figma.com/app/icon/1/favicon.png';
+                }
+                if (fullUrl.includes('linkedin.com')) {
+                    return 'https://static.licdn.com/aero-v1/sc/h/al2o9zrvru7uj4v2dgpmm.png';
+                }
+                if (fullUrl.includes('twitter.com') || fullUrl.includes('x.com')) {
+                    return 'https://abs.twimg.com/responsive-web/client-web/icon-ios.77d25eba.png';
+                }
+                if (fullUrl.includes('spotify.com')) {
+                    return 'https://open.spotifycdn.com/cdn/images/favicon32.b64ecc03.png';
+                }
+                if (fullUrl.includes('netflix.com')) {
+                    return 'https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2016.ico';
+                }
+                if (fullUrl.includes('slack.com')) {
+                    return 'https://a.slack-edge.com/80588/marketing/img/meta/favicon-32.png';
+                }
+                if (fullUrl.includes('trello.com')) {
+                    return 'https://trello.com/favicon.ico';
+                }
+                
+                // Fallback: use DuckDuckGo icons (more reliable)
+                const hostname = new URL(url).hostname;
+                return `https://icons.duckduckgo.com/ip3/${hostname}.ico`;
+            } catch {
+                return null;
+            }
+        }
+
+        function renderShortcuts() {
+            const container = document.getElementById('shortcuts-container');
+            const shortcuts = getShortcuts();
+            
+            container.innerHTML = shortcuts.map((shortcut, index) => `
+                <div class="shortcut-btn" title="${shortcut.url}" onclick="openShortcut('${shortcut.url}')" oncontextmenu="showShortcutContextMenu(event, ${index})">
+                    <img src="${getFaviconUrl(shortcut.url)}" alt="">
+                </div>
+            `).join('');
+        }
+
+        function openShortcut(url) {
+            window.open(url, '_blank');
+        }
+
+        function openShortcutModal() {
+            document.getElementById('shortcut-modal').classList.add('active');
+            document.getElementById('shortcut-url-input').value = '';
+            document.getElementById('shortcut-url-input').focus();
+        }
+
+        function closeShortcutModal() {
+            document.getElementById('shortcut-modal').classList.remove('active');
+        }
+
+        function saveShortcut() {
+            const input = document.getElementById('shortcut-url-input');
+            let url = input.value.trim();
+            
+            if (!url) return;
+            
+            // Add https:// if no protocol
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+            
+            try {
+                new URL(url); // Validate URL
+                const shortcuts = getShortcuts();
+                shortcuts.push({ url });
+                saveShortcuts(shortcuts);
+                renderShortcuts();
+                closeShortcutModal();
+            } catch {
+                alert('URL invalide');
+            }
+        }
+
+        let shortcutToDelete = null;
+
+        function showShortcutContextMenu(e, index) {
+            e.preventDefault();
+            e.stopPropagation();
+            shortcutToDelete = index;
+            
+            const menu = document.getElementById('shortcut-context-menu');
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+            menu.classList.add('active');
+        }
+
+        function hideShortcutContextMenu() {
+            document.getElementById('shortcut-context-menu').classList.remove('active');
+            shortcutToDelete = null;
+        }
+
+        function confirmDeleteShortcut() {
+            if (shortcutToDelete !== null) {
+                const shortcuts = getShortcuts();
+                shortcuts.splice(shortcutToDelete, 1);
+                saveShortcuts(shortcuts);
+                renderShortcuts();
+            }
+            hideShortcutContextMenu();
+        }
+
+        // Hide context menu on click elsewhere
+        document.addEventListener('click', () => {
+            hideShortcutContextMenu();
+        });
+
+        // Handle Enter key in modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.getElementById('shortcut-modal').classList.contains('active')) {
+                saveShortcut();
+            }
+            if (e.key === 'Escape' && document.getElementById('shortcut-modal').classList.contains('active')) {
+                closeShortcutModal();
+            }
+        });
+
+        // Initialize shortcuts on page load
+        renderShortcuts();
+
+        // Initialize profile on page load
+        initProfile();
+
+        // ===== TOP CLOCK =====
+        function updateTopClock() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('top-clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        
+        updateTopClock();
+        setInterval(updateTopClock, 1000);
+
+        // ===== GOOGLE SEARCH =====
+        function searchGoogle(e) {
+            e.preventDefault();
+            const query = document.getElementById('google-search').value.trim();
+            if (query) {
+                window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+                document.getElementById('google-search').value = '';
+            }
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Firebase Auth State Listener
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    // User is signed in
+                    hideAuthPopup();
+                    await downloadDataFromFirebase(user.uid);
+                    updateProfileUI();
+                    showToast('Connecté !');
+                    renderAll();
+                } else {
+                    // User is signed out - show auth popup
+                    showAuthPopup();
+                }
+            });
+
+            // Load saved accent color for non-logged users
+            const savedColor = localStorage.getItem('today_accent_color');
+            if (savedColor) {
+                applyAccentColor(savedColor);
+            }
+
+            // Entry input
+            const entryInput = document.getElementById('entry-input');
+            const saveBtn = document.getElementById('save-btn');
+            
+            entryInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSaveEntry();
+                }
+            });
+            saveBtn.addEventListener('click', handleSaveEntry);
+
+            // View toggles
+            document.getElementById('view-today').addEventListener('click', () => {
+                currentView = 'today';
+                selectedDate = null;
+                document.getElementById('view-today').classList.add('active');
+                document.getElementById('view-all').classList.remove('active');
+                renderEntries();
+                renderCalendar();
+            });
+            
+            document.getElementById('view-all').addEventListener('click', () => {
+                currentView = 'all';
+                selectedDate = null;
+                document.getElementById('view-all').classList.add('active');
+                document.getElementById('view-today').classList.remove('active');
+                renderEntries();
+                renderCalendar();
+            });
+
+            // Calendar navigation
+            document.getElementById('prev-month').addEventListener('click', () => {
+                calendarDate.setMonth(calendarDate.getMonth() - 1);
+                renderCalendar();
+            });
+            
+            document.getElementById('next-month').addEventListener('click', () => {
+                calendarDate.setMonth(calendarDate.getMonth() + 1);
+                renderCalendar();
+            });
+
+            // Todo input
+            const todoInput = document.getElementById('todo-input');
+            const todoAddBtn = document.getElementById('todo-add-btn');
+            
+            todoInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    handleAddTodo();
+                }
+            });
+            todoAddBtn.addEventListener('click', handleAddTodo);
+
+            // Initial render
+            renderEntries();
+            renderCalendar();
+            renderTodos();
+            initTimer();
+            updateMementoMori();
+            renderHabits();
+            renderMood();
+            renderNotesCount();
+            renderPrayers();
+            renderDailyVerse();
+            renderShortcuts();
+            entryInput.focus();
+            
+            console.log('🚀 TODAY app ready');
+        });
+    </script>
+</body>
+</html>
