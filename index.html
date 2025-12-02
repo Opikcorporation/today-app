@@ -6,17 +6,29 @@
     <title>TODAY</title>
     
     <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
     <script>
         // Supabase Configuration
         const SUPABASE_URL = 'https://ziapxtaofjfmaziwgapn.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppYXB4dGFvZmpmbWF6aXdnYXBuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2NjgyNTQsImV4cCI6MjA4MDI0NDI1NH0._FXrzgGnBBrUR09AILD3GopEpfcIR98bs5msDEe30no';
 
-        // Initialize Supabase client
-        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const auth = supabase.auth;
-        const db = supabase; // use supabase.from(...) for queries
+        // Initialize Supabase client - wait for the library to be available
+        let supabase, auth, db;
+        
+        function initSupabase() {
+            if (typeof window.supabase !== 'undefined') {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                auth = supabase.auth;
+                db = supabase;
+                console.log('✅ Supabase initialized');
+            } else {
+                console.warn('⏳ Supabase library not loaded yet, retrying...');
+                setTimeout(initSupabase, 100);
+            }
+        }
+        
+        initSupabase();
     </script>
     
     <style>
@@ -4835,6 +4847,19 @@
         // ============================================
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 DOMContentLoaded fired');
+
+            // Wait for Supabase to be initialized
+            let retries = 0;
+            while (!supabase && retries < 50) {
+                await new Promise(r => setTimeout(r, 100));
+                retries++;
+            }
+
+            if (!supabase) {
+                console.error('❌ Supabase failed to initialize');
+                showAuthPopup();
+                return;
+            }
 
             // Supabase Auth: check current session and listen for changes
             try {
