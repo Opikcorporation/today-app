@@ -4671,35 +4671,47 @@
         }
 
         async function saveProfile() {
-            const profile = getProfile();
             const pseudo = document.getElementById('profile-pseudo').value.trim();
             const avatarLarge = document.querySelector('.profile-avatar-large');
             const newAvatar = avatarLarge.dataset.newAvatar;
             
-            profile.pseudo = pseudo;
-            profile.accentColor = selectedAccentColor;
-            if (newAvatar) {
-                profile.avatar = newAvatar;
+            console.log('💾 saveProfile called, newAvatar exists:', !!newAvatar, 'length:', newAvatar?.length);
+            
+            // Update currentUser with new data
+            if (!currentUser) {
+                currentUser = { pseudo: '', email: '', avatar: '', accentColor: DEFAULT_ACCENT };
             }
             
-            saveProfileData(profile);
+            currentUser.pseudo = pseudo;
+            currentUser.accentColor = selectedAccentColor;
+            if (newAvatar) {
+                currentUser.avatar = newAvatar;
+                console.log('💾 Avatar set in currentUser');
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('today_user', JSON.stringify(currentUser));
+            localStorage.setItem('userProfile', JSON.stringify(currentUser));
+            
             applyAccentColor(selectedAccentColor);
             
             // Update Supabase users row if logged in
             if (authUser) {
-                currentUser = {
-                    ...currentUser,
-                    pseudo: pseudo,
-                    accentColor: selectedAccentColor
-                };
-                if (newAvatar) currentUser.avatar = newAvatar;
-
-                localStorage.setItem('today_user', JSON.stringify(currentUser));
-
                 try {
-                    const upsertPayload = [{ id: authUser.id, pseudo: pseudo, accent_color: selectedAccentColor, avatar: currentUser.avatar || '', email: currentUser.email || authUser.email }];
+                    const upsertPayload = [{ 
+                        id: authUser.id, 
+                        pseudo: pseudo, 
+                        accent_color: selectedAccentColor, 
+                        avatar: currentUser.avatar || '', 
+                        email: currentUser.email || authUser.email 
+                    }];
+                    console.log('💾 Upserting to Supabase:', upsertPayload);
                     const { error: upsertErr } = await supabase.from('users').upsert(upsertPayload, { onConflict: 'id' });
-                    if (upsertErr) console.error('Error saving profile to Supabase users table:', upsertErr.message || upsertErr);
+                    if (upsertErr) {
+                        console.error('Error saving profile to Supabase users table:', upsertErr.message || upsertErr);
+                    } else {
+                        console.log('✅ Profile saved to Supabase');
+                    }
                 } catch (e) {
                     console.error('Error saving profile to Supabase:', e);
                 }
