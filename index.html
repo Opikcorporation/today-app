@@ -2984,7 +2984,9 @@
                 console.error('❌ Login error:', error);
                 let message = 'Erreur de connexion';
                 const code = error?.status || error?.message || '';
-                if (code === 401 || (error?.message && error.message.toLowerCase().includes('invalid login credentials'))) {
+                if (error?.message && error.message.toLowerCase().includes('email not confirmed')) {
+                    message = 'Veuillez confirmer votre email avant de vous connecter';
+                } else if (code === 401 || (error?.message && error.message.toLowerCase().includes('invalid login credentials'))) {
                     message = 'Email ou mot de passe incorrect';
                 } else if (error?.message && error.message.toLowerCase().includes('invalid email')) {
                     message = 'Email invalide';
