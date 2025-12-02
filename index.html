@@ -3022,16 +3022,27 @@
             const avatar = currentUser?.avatar || '';
             const initial = pseudo.charAt(0).toUpperCase();
             
-            document.getElementById('profile-initial').textContent = initial;
-            document.getElementById('profile-initial-large').textContent = initial;
-            document.getElementById('profile-pseudo').value = pseudo;
-            document.getElementById('profile-email').value = email;
-            document.getElementById('profile-email').disabled = !!firebaseUser;
+            // Check if elements exist before updating
+            const profileInitial = document.getElementById('profile-initial');
+            const profileInitialLarge = document.getElementById('profile-initial-large');
+            const profilePseudo = document.getElementById('profile-pseudo');
+            const profileEmail = document.getElementById('profile-email');
+            const avatarLarge = document.querySelector('.profile-avatar-large');
             
-            if (avatar) {
-                document.querySelector('.profile-avatar-large').innerHTML = `<img src="${avatar}" alt="Avatar">`;
-            } else {
-                document.querySelector('.profile-avatar-large').innerHTML = `<span class="profile-initial-large">${initial}</span><div class="profile-avatar-edit">Modifier</div>`;
+            if (profileInitial) profileInitial.textContent = initial;
+            if (profileInitialLarge) profileInitialLarge.textContent = initial;
+            if (profilePseudo) profilePseudo.value = pseudo;
+            if (profileEmail) {
+                profileEmail.value = email;
+                profileEmail.disabled = !!firebaseUser;
+            }
+            
+            if (avatarLarge) {
+                if (avatar) {
+                    avatarLarge.innerHTML = `<img src="${avatar}" alt="Avatar">`;
+                } else {
+                    avatarLarge.innerHTML = `<span class="profile-initial-large">${initial}</span><div class="profile-avatar-edit">Modifier</div>`;
+                }
             }
         }
 
