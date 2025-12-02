@@ -3012,9 +3012,13 @@
         }
 
         function updateProfileUI() {
+            console.log('🎨 updateProfileUI called');
+            console.log('👤 currentUser:', currentUser);
             const firebaseUser = auth.currentUser;
+            console.log('🔥 Firebase currentUser:', firebaseUser?.email);
             const pseudo = currentUser?.pseudo || firebaseUser?.displayName || 'Utilisateur';
             const email = currentUser?.email || firebaseUser?.email || '';
+            console.log('📝 Will display - pseudo:', pseudo, 'email:', email);
             const avatar = currentUser?.avatar || '';
             const initial = pseudo.charAt(0).toUpperCase();
             
@@ -3053,15 +3057,19 @@
 
         async function downloadDataFromFirebase(userId) {
             showSyncIndicator('Synchronisation...');
+            console.log('📥 downloadDataFromFirebase started for userId:', userId);
             
             try {
                 // Get Firebase Auth user email
                 const firebaseUser = auth.currentUser;
                 const authEmail = firebaseUser?.email || '';
+                console.log('📧 Firebase Auth email:', authEmail);
                 
                 const userDoc = await db.collection('users').doc(userId).get();
+                console.log('📄 User document exists:', userDoc.exists);
                 if (userDoc.exists) {
                     const userData = userDoc.data();
+                    console.log('👤 User data from Firestore:', userData);
                     currentUser = {
                         uid: userId,
                         pseudo: userData.pseudo || 'Utilisateur',
@@ -3069,6 +3077,7 @@
                         avatar: userData.avatar || '',
                         accentColor: userData.accentColor || '#f97316'
                     };
+                    console.log('✅ currentUser set to:', currentUser);
                 } else {
                     // Document doesn't exist yet, create it with auth data
                     currentUser = {
