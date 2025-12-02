@@ -4412,6 +4412,17 @@
                 return currentUser;
             }
 
+            const firebaseUser = auth.currentUser;
+            if (firebaseUser) {
+                return {
+                    uid: firebaseUser.uid,
+                    pseudo: firebaseUser.displayName || '',
+                    email: firebaseUser.email || '',
+                    avatar: '',
+                    accentColor: DEFAULT_ACCENT
+                };
+            }
+
             const storedTodayUser = localStorage.getItem('today_user');
             if (storedTodayUser) {
                 try {
@@ -4479,14 +4490,18 @@
             }
             const initial = document.getElementById('profile-initial');
             if (initial) {
-                initial.textContent = profile.pseudo ? profile.pseudo.charAt(0).toUpperCase() : '?';
+                const displayPseudo = profile.pseudo || auth.currentUser?.displayName || auth.currentUser?.email || '';
+                initial.textContent = displayPseudo ? displayPseudo.charAt(0).toUpperCase() : '?';
             }
         }
 
         function openProfileSettings() {
             const profile = getProfile();
-            document.getElementById('profile-pseudo').value = profile.pseudo || '';
-            document.getElementById('profile-email').value = profile.email || '';
+            const firebaseUser = auth.currentUser;
+            const pseudoValue = profile.pseudo || firebaseUser?.displayName || firebaseUser?.email?.split('@')[0] || '';
+            const emailValue = profile.email || firebaseUser?.email || '';
+            document.getElementById('profile-pseudo').value = pseudoValue;
+            document.getElementById('profile-email').value = emailValue;
             selectedAccentColor = profile.accentColor || DEFAULT_ACCENT;
             
             // Update avatar in popup
@@ -4494,7 +4509,7 @@
             if (profile.avatar) {
                 avatarLarge.innerHTML = `<img src="${profile.avatar}" alt="Profile"><div class="profile-avatar-edit">Modifier</div>`;
             } else {
-                const initialText = profile.pseudo ? profile.pseudo.charAt(0).toUpperCase() : '?';
+                const initialText = pseudoValue ? pseudoValue.charAt(0).toUpperCase() : '?';
                 avatarLarge.innerHTML = `<span class="profile-initial-large">${initialText}</span><div class="profile-avatar-edit">Modifier</div>`;
             }
             
