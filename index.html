@@ -18,10 +18,24 @@
         
         function initSupabase() {
             if (typeof window.supabase !== 'undefined') {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                // Configure localStorage persistence for sessions
+                const storage = {
+                    getItem: (key) => localStorage.getItem(key),
+                    setItem: (key, value) => localStorage.setItem(key, value),
+                    removeItem: (key) => localStorage.removeItem(key),
+                };
+                
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        storage: storage,
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true
+                    }
+                });
                 auth = supabase.auth;
                 db = supabase;
-                console.log('✅ Supabase initialized');
+                console.log('✅ Supabase initialized with localStorage persistence');
             } else {
                 console.warn('⏳ Supabase library not loaded yet, retrying...');
                 setTimeout(initSupabase, 100);
