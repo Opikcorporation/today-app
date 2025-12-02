@@ -4927,7 +4927,6 @@
 
             // Entry input
             const entryInput = document.getElementById('entry-input');
-            const saveBtn = document.getElementById('save-btn');
             
             entryInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -4935,7 +4934,6 @@
                     handleSaveEntry();
                 }
             });
-            saveBtn.addEventListener('click', handleSaveEntry);
 
             // View toggles
             document.getElementById('view-today').addEventListener('click', () => {
