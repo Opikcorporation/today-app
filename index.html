@@ -4733,17 +4733,28 @@
         // INIT
         // ============================================
         document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 DOMContentLoaded fired');
+            
             // Firebase Auth State Listener
             auth.onAuthStateChanged(async (user) => {
+                console.log('🔥 onAuthStateChanged fired, user:', user ? user.email : 'null');
                 if (user) {
                     // User is signed in
+                    console.log('✅ User is signed in:', user.uid);
                     hideAuthPopup();
-                    await downloadDataFromFirebase(user.uid);
+                    try {
+                        await downloadDataFromFirebase(user.uid);
+                        console.log('✅ downloadDataFromFirebase completed');
+                    } catch (err) {
+                        console.error('❌ downloadDataFromFirebase error:', err);
+                    }
                     updateProfileUI();
+                    console.log('✅ updateProfileUI completed');
                     showToast('Connecté !');
                     renderAll();
                 } else {
                     // User is signed out - show auth popup
+                    console.log('❌ User is signed out');
                     showAuthPopup();
                 }
             });
