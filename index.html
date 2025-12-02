@@ -2958,11 +2958,30 @@
             btn.textContent = 'Connexion...';
             errorEl.classList.remove('show');
             
+            console.log('🔐 handleLogin called with email:', email);
+            
             try {
                 const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                console.log('🔐 signInWithPassword result:', { data, error });
+                
                 if (error) throw error;
-                // on success, auth state listener / getUser will handle UI
+                
+                // Manually trigger UI update if onAuthStateChange doesn't fire
+                if (data?.user) {
+                    console.log('✅ Login successful, user:', data.user.email);
+                    authUser = data.user;
+                    hideAuthPopup();
+                    try {
+                        await downloadDataFromSupabase(data.user.id);
+                    } catch (err) {
+                        console.error('❌ downloadDataFromSupabase error:', err);
+                    }
+                    updateProfileUI();
+                    showToast('Connecté !');
+                    renderAll();
+                }
             } catch (error) {
+                console.error('❌ Login error:', error);
                 let message = 'Erreur de connexion';
                 const code = error?.status || error?.message || '';
                 if (code === 401 || (error?.message && error.message.toLowerCase().includes('invalid login credentials'))) {
