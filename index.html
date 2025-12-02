@@ -3036,38 +3036,57 @@
             document.getElementById('auth-popup').classList.add('hidden');
         }
 
-        function updateProfileUI() {
-            console.log('🎨 updateProfileUI called');
+        function updateProfileUI(retries = 5) {
+            // Retry mechanism to handle race conditions where DOM elements
+            // aren't yet present when this function is called.
+            console.log('🎨 updateProfileUI called (retries left):', retries);
             console.log('👤 currentUser:', currentUser);
             const firebaseUser = auth.currentUser;
             console.log('🔥 Firebase currentUser:', firebaseUser?.email);
+
             const pseudo = currentUser?.pseudo || firebaseUser?.displayName || 'Utilisateur';
             const email = currentUser?.email || firebaseUser?.email || '';
             console.log('📝 Will display - pseudo:', pseudo, 'email:', email);
             const avatar = currentUser?.avatar || '';
-            const initial = pseudo.charAt(0).toUpperCase();
-            
-            // Check if elements exist before updating
+            const initial = (pseudo && pseudo.length) ? pseudo.charAt(0).toUpperCase() : '?';
+
             const profileInitial = document.getElementById('profile-initial');
             const profileInitialLarge = document.getElementById('profile-initial-large');
             const profilePseudo = document.getElementById('profile-pseudo');
             const profileEmail = document.getElementById('profile-email');
             const avatarLarge = document.querySelector('.profile-avatar-large');
-            
-            if (profileInitial) profileInitial.textContent = initial;
-            if (profileInitialLarge) profileInitialLarge.textContent = initial;
-            if (profilePseudo) profilePseudo.value = pseudo;
-            if (profileEmail) {
-                profileEmail.value = email;
-                profileEmail.disabled = !!firebaseUser;
+
+            // If critical elements are missing, retry a few times before giving up
+            if ((!profileInitial || !profileInitialLarge || !profilePseudo || !profileEmail || !avatarLarge) && retries > 0) {
+                console.warn('updateProfileUI: some DOM elements missing, retrying...', {
+                    profileInitial: !!profileInitial,
+                    profileInitialLarge: !!profileInitialLarge,
+                    profilePseudo: !!profilePseudo,
+                    profileEmail: !!profileEmail,
+                    avatarLarge: !!avatarLarge
+                });
+                setTimeout(() => updateProfileUI(retries - 1), 100);
+                return;
             }
-            
-            if (avatarLarge) {
-                if (avatar) {
-                    avatarLarge.innerHTML = `<img src="${avatar}" alt="Avatar">`;
-                } else {
-                    avatarLarge.innerHTML = `<span class="profile-initial-large">${initial}</span><div class="profile-avatar-edit">Modifier</div>`;
+
+            try {
+                if (profileInitial) profileInitial.textContent = initial;
+                if (profileInitialLarge) profileInitialLarge.textContent = initial;
+                if (profilePseudo) profilePseudo.value = pseudo;
+                if (profileEmail) {
+                    profileEmail.value = email;
+                    profileEmail.disabled = !!firebaseUser;
                 }
+
+                if (avatarLarge) {
+                    if (avatar) {
+                        avatarLarge.innerHTML = `<img src="${avatar}" alt="Avatar">`;
+                    } else {
+                        avatarLarge.innerHTML = `<span class="profile-initial-large">${initial}</span><div class="profile-avatar-edit">Modifier</div>`;
+                    }
+                }
+            } catch (err) {
+                console.error('updateProfileUI unexpected error:', err);
             }
         }
 
