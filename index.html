@@ -921,21 +921,24 @@
         .input-section {
             position: relative;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
+            width: 100%;
         }
 
         .entry-input {
             flex: 1;
             background: transparent;
             border: none;
-            padding: 0;
-            padding-right: 50px;
+            padding: 10px 0;
+            padding-right: 60px;
             color: var(--text);
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-family: inherit;
             resize: none;
             outline: none;
-            line-height: 1.5;
+            line-height: 1.6;
+            min-height: 50px;
+            width: 100%;
         }
 
         .entry-input::placeholder {
@@ -2638,7 +2641,7 @@
             <!-- Row 1: Input full width -->
             <div class="widget bento-w-12" id="input-widget">
                 <div class="input-section">
-                    <textarea id="entry-input" class="entry-input" placeholder="Qu'as-tu accompli ?" rows="1"></textarea>
+                    <textarea id="entry-input" class="entry-input" placeholder="Qu'as-tu accompli aujourd'hui ?" rows="2"></textarea>
                     <button id="save-btn" class="save-btn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <line x1="22" y1="2" x2="11" y2="13"></line>
