@@ -379,8 +379,8 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            border: 2px solid var(--border);
-            background: var(--card);
+            border: 2px solid var(--accent);
+            background: transparent;
             cursor: pointer;
             transition: all 0.2s;
             overflow: hidden;
@@ -391,20 +391,20 @@
         }
 
         .profile-btn:hover {
-            border-color: var(--accent);
-            transform: scale(1.05);
-        }
-
-        .profile-btn img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(var(--accent-glow), 0.4);
         }
 
         .profile-btn .profile-initial {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text);
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: white;
+            border-radius: 50%;
         }
 
         /* Profile Popup */
@@ -477,42 +477,27 @@
             height: 80px;
             border-radius: 50%;
             border: 3px solid var(--accent);
-            background: var(--bg);
+            background: var(--accent);
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             margin-bottom: 12px;
             position: relative;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .profile-avatar-large:hover {
-            opacity: 0.8;
-        }
-
-        .profile-avatar-large img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            transition: all 0.3s;
         }
 
         .profile-avatar-large .profile-initial-large {
-            font-size: 2rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .profile-avatar-edit {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0,0,0,0.6);
+            font-size: 2.2rem;
+            font-weight: 700;
             color: white;
-            font-size: 0.65rem;
-            padding: 4px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
             text-align: center;
         }
 
@@ -2572,11 +2557,9 @@
                 </div>
                 
                 <div class="profile-avatar-section">
-                    <div class="profile-avatar-large" onclick="document.getElementById('avatar-input').click()">
+                    <div class="profile-avatar-large" id="profile-avatar-display">
                         <span class="profile-initial-large" id="profile-initial-large">?</span>
-                        <div class="profile-avatar-edit">Modifier</div>
                     </div>
-                    <input type="file" id="avatar-input" class="profile-avatar-input" accept="image/*" onchange="handleAvatarChange(event)">
                 </div>
 
                 <div class="profile-field">
@@ -4571,19 +4554,12 @@
             const btn = document.getElementById('profile-btn');
             if (!btn) return;
             
-            if (profile.avatar) {
-                btn.innerHTML = `<img src="${profile.avatar}" alt="Profile">`;
-                return;
-            }
+            const displayPseudo = profile.pseudo || authUser?.user_metadata?.pseudo || authUser?.email || '';
+            const initial = displayPseudo ? displayPseudo.charAt(0).toUpperCase() : '?';
+            const color = profile.accentColor || selectedAccentColor || DEFAULT_ACCENT;
             
-            if (!btn.querySelector('#profile-initial')) {
-                btn.innerHTML = '<span class="profile-initial" id="profile-initial">?</span>';
-            }
-            const initial = document.getElementById('profile-initial');
-            if (initial) {
-                const displayPseudo = profile.pseudo || authUser?.user_metadata?.pseudo || authUser?.email || '';
-                initial.textContent = displayPseudo ? displayPseudo.charAt(0).toUpperCase() : '?';
-            }
+            btn.innerHTML = `<span class="profile-initial" id="profile-initial" style="background: ${color}; color: white;">${initial}</span>`;
+            btn.style.borderColor = color;
         }
 
         function openProfileSettings() {
@@ -4595,14 +4571,11 @@
             document.getElementById('profile-email').value = emailValue;
             selectedAccentColor = profile.accentColor || DEFAULT_ACCENT;
             
-            // Update avatar in popup
+            // Update avatar in popup - always show colored circle with initial
             const avatarLarge = document.querySelector('.profile-avatar-large');
-            if (profile.avatar) {
-                avatarLarge.innerHTML = `<img src="${profile.avatar}" alt="Profile"><div class="profile-avatar-edit">Modifier</div>`;
-            } else {
-                const initialText = pseudoValue ? pseudoValue.charAt(0).toUpperCase() : '?';
-                avatarLarge.innerHTML = `<span class="profile-initial-large">${initialText}</span><div class="profile-avatar-edit">Modifier</div>`;
-            }
+            const initialText = pseudoValue ? pseudoValue.charAt(0).toUpperCase() : '?';
+            avatarLarge.innerHTML = `<span class="profile-initial-large" style="background: ${selectedAccentColor}; color: white;">${initialText}</span>`;
+            avatarLarge.style.borderColor = selectedAccentColor;
             
             // Update color picker selection
             document.querySelectorAll('.color-option').forEach(opt => {
@@ -4623,71 +4596,29 @@
             });
             // Preview the color immediately
             applyAccentColor(color);
-        }
-
-        function handleAvatarChange(event) {
-            const file = event.target.files[0];
-            console.log('📷 handleAvatarChange called, file:', file?.name, 'size:', file?.size);
-            if (file) {
-                // Compress image if too large
-                const maxSize = 100 * 1024; // 100KB max
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        // Resize if needed
-                        const canvas = document.createElement('canvas');
-                        const maxDim = 200; // Max 200x200
-                        let width = img.width;
-                        let height = img.height;
-                        
-                        if (width > maxDim || height > maxDim) {
-                            if (width > height) {
-                                height = (height / width) * maxDim;
-                                width = maxDim;
-                            } else {
-                                width = (width / height) * maxDim;
-                                height = maxDim;
-                            }
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        // Convert to compressed JPEG
-                        const compressedData = canvas.toDataURL('image/jpeg', 0.7);
-                        console.log('📷 Compressed avatar size:', compressedData.length);
-                        
-                        const avatarLarge = document.querySelector('.profile-avatar-large');
-                        avatarLarge.innerHTML = `<img src="${compressedData}" alt="Profile"><div class="profile-avatar-edit">Modifier</div>`;
-                        avatarLarge.dataset.newAvatar = compressedData;
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+            
+            // Update avatar preview color
+            const avatarLarge = document.querySelector('.profile-avatar-large');
+            const initialLarge = avatarLarge?.querySelector('.profile-initial-large');
+            if (avatarLarge) {
+                avatarLarge.style.borderColor = color;
+                avatarLarge.style.background = color;
+            }
+            if (initialLarge) {
+                initialLarge.style.background = color;
             }
         }
 
         async function saveProfile() {
             const pseudo = document.getElementById('profile-pseudo').value.trim();
-            const avatarLarge = document.querySelector('.profile-avatar-large');
-            const newAvatar = avatarLarge.dataset.newAvatar;
-            
-            console.log('💾 saveProfile called, newAvatar exists:', !!newAvatar, 'length:', newAvatar?.length);
             
             // Update currentUser with new data
             if (!currentUser) {
-                currentUser = { pseudo: '', email: '', avatar: '', accentColor: DEFAULT_ACCENT };
+                currentUser = { pseudo: '', email: '', accentColor: DEFAULT_ACCENT };
             }
             
             currentUser.pseudo = pseudo;
             currentUser.accentColor = selectedAccentColor;
-            if (newAvatar) {
-                currentUser.avatar = newAvatar;
-                console.log('💾 Avatar set in currentUser');
-            }
             
             // Save to localStorage
             localStorage.setItem('today_user', JSON.stringify(currentUser));
@@ -4702,15 +4633,11 @@
                         id: authUser.id, 
                         pseudo: pseudo, 
                         accent_color: selectedAccentColor, 
-                        avatar: currentUser.avatar || '', 
                         email: currentUser.email || authUser.email 
                     }];
-                    console.log('💾 Upserting to Supabase:', upsertPayload);
                     const { error: upsertErr } = await supabase.from('users').upsert(upsertPayload, { onConflict: 'id' });
                     if (upsertErr) {
                         console.error('Error saving profile to Supabase users table:', upsertErr.message || upsertErr);
-                    } else {
-                        console.log('✅ Profile saved to Supabase');
                     }
                 } catch (e) {
                     console.error('Error saving profile to Supabase:', e);
