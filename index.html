@@ -2961,6 +2961,11 @@
             errorEl.classList.remove('show');
             
             try {
+                // Clear old user data before creating new account
+                localStorage.removeItem('today_user');
+                localStorage.removeItem('userProfile');
+                currentUser = null;
+                
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 
                 // Save user profile to Firestore
@@ -2971,8 +2976,25 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
+                // Set currentUser immediately so UI updates correctly
+                currentUser = {
+                    uid: userCredential.user.uid,
+                    pseudo: pseudo,
+                    email: email,
+                    avatar: '',
+                    accentColor: '#f97316'
+                };
+                localStorage.setItem('today_user', JSON.stringify(currentUser));
+                saveProfileData(currentUser);
+                
                 // Upload current local data to Firebase
                 await uploadAllDataToFirebase(userCredential.user.uid);
+                
+                // Update UI
+                updateProfileUI();
+                hideAuthPopup();
+                showToast('Compte créé !');
+                renderAll();
                 
             } catch (error) {
                 let message = 'Erreur lors de l\'inscription';
@@ -2996,9 +3018,11 @@
                 await auth.signOut();
                 currentUser = null;
                 localStorage.removeItem('today_user');
+                localStorage.removeItem('userProfile');
                 closeProfileSettings();
                 showAuthPopup();
                 showToast('Déconnecté');
+                renderProfileButton();
             } catch (error) {
                 console.error('Logout error:', error);
             }
@@ -3109,6 +3133,8 @@
                 }
                 
                 localStorage.setItem('today_user', JSON.stringify(currentUser));
+                saveProfileData(currentUser);
+                renderProfileButton();
                 
                 if (currentUser.accentColor) {
                     applyAccentColor(currentUser.accentColor);
@@ -4378,14 +4404,35 @@
 
         // ===== PROFILE SETTINGS =====
         const DEFAULT_ACCENT = '#f97316';
+        const OFFLINE_PROFILE_DEFAULT = { pseudo: '', email: '', avatar: '', accentColor: DEFAULT_ACCENT };
         let selectedAccentColor = DEFAULT_ACCENT;
 
         function getProfile() {
-            return JSON.parse(localStorage.getItem('userProfile') || '{"pseudo": "", "email": "", "avatar": "", "accentColor": "#f97316"}');
+            if (currentUser) {
+                return currentUser;
+            }
+
+            const storedTodayUser = localStorage.getItem('today_user');
+            if (storedTodayUser) {
+                try {
+                    return JSON.parse(storedTodayUser);
+                } catch (err) {
+                    console.warn('Invalid today_user data', err);
+                }
+            }
+
+            const storedProfile = localStorage.getItem('userProfile');
+            return storedProfile ? JSON.parse(storedProfile) : { ...OFFLINE_PROFILE_DEFAULT };
         }
 
         function saveProfileData(data) {
-            localStorage.setItem('userProfile', JSON.stringify(data));
+            const payload = {
+                pseudo: data.pseudo || '',
+                email: data.email || '',
+                avatar: data.avatar || '',
+                accentColor: data.accentColor || DEFAULT_ACCENT
+            };
+            localStorage.setItem('userProfile', JSON.stringify(payload));
         }
 
         function hexToRgb(hex) {
@@ -4420,14 +4467,19 @@
         function renderProfileButton() {
             const profile = getProfile();
             const btn = document.getElementById('profile-btn');
-            const initial = document.getElementById('profile-initial');
+            if (!btn) return;
             
             if (profile.avatar) {
                 btn.innerHTML = `<img src="${profile.avatar}" alt="Profile">`;
-            } else if (profile.pseudo) {
-                initial.textContent = profile.pseudo.charAt(0).toUpperCase();
-            } else {
-                initial.textContent = '?';
+                return;
+            }
+            
+            if (!btn.querySelector('#profile-initial')) {
+                btn.innerHTML = '<span class="profile-initial" id="profile-initial">?</span>';
+            }
+            const initial = document.getElementById('profile-initial');
+            if (initial) {
+                initial.textContent = profile.pseudo ? profile.pseudo.charAt(0).toUpperCase() : '?';
             }
         }
 
