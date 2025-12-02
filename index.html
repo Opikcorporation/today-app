@@ -5,26 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TODAY</title>
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+
     <script>
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBBO9MbhLuPT71l-vub0GPZisBMf_0vpXY",
-            authDomain: "today-app-3fb11.firebaseapp.com",
-            projectId: "today-app-3fb11",
-            storageBucket: "today-app-3fb11.firebasestorage.app",
-            messagingSenderId: "605616755880",
-            appId: "1:605616755880:web:178ef354a0b729732bde9d"
-        };
-        
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://ziapxtaofjfmaziwgapn.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppYXB4dGFvZmpmbWF6aXdnYXBuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2NjgyNTQsImV4cCI6MjA4MDI0NDI1NH0._FXrzgGnBBrUR09AILD3GopEpfcIR98bs5msDEe30no';
+
+        // Initialize Supabase client
+        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const auth = supabase.auth;
+        const db = supabase; // use supabase.from(...) for queries
     </script>
     
     <style>
@@ -2900,9 +2892,10 @@
 
     <script>
         // ============================================
-        // FIREBASE AUTH & SYNC
+        // SUPABASE AUTH & SYNC
         // ============================================
         let currentUser = null;
+        let authUser = null; // supabase auth user object
         let unsubscribeAuth = null;
 
         // ============================================
@@ -2928,16 +2921,16 @@
             errorEl.classList.remove('show');
             
             try {
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                // Auth state listener will handle the rest
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                // on success, auth state listener / getUser will handle UI
             } catch (error) {
                 let message = 'Erreur de connexion';
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                const code = error?.status || error?.message || '';
+                if (code === 401 || (error?.message && error.message.toLowerCase().includes('invalid login credentials'))) {
                     message = 'Email ou mot de passe incorrect';
-                } else if (error.code === 'auth/invalid-email') {
+                } else if (error?.message && error.message.toLowerCase().includes('invalid email')) {
                     message = 'Email invalide';
-                } else if (error.code === 'auth/too-many-requests') {
-                    message = 'Trop de tentatives, réessaie plus tard';
                 }
                 errorEl.textContent = message;
                 errorEl.classList.add('show');
@@ -2965,20 +2958,19 @@
                 localStorage.removeItem('today_user');
                 localStorage.removeItem('userProfile');
                 currentUser = null;
-                
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                
-                // Save user profile to Firestore
-                await db.collection('users').doc(userCredential.user.uid).set({
-                    pseudo: pseudo,
-                    email: email,
-                    accentColor: '#f97316',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
+
+                // Create user with Supabase Auth
+                const { data: signData, error: signError } = await supabase.auth.signUp({ email, password }, { data: { pseudo } });
+                if (signError) throw signError;
+                const newUser = signData.user;
+
+                // Insert profile into users table
+                const { error: insertError } = await supabase.from('users').insert([{ id: newUser.id, email: email, pseudo: pseudo, accent_color: '#f97316', created_at: new Date().toISOString() }]);
+                if (insertError) console.warn('Could not insert user profile into users table:', insertError.message || insertError);
+
                 // Set currentUser immediately so UI updates correctly
                 currentUser = {
-                    uid: userCredential.user.uid,
+                    uid: newUser.id,
                     pseudo: pseudo,
                     email: email,
                     avatar: '',
@@ -2986,23 +2978,23 @@
                 };
                 localStorage.setItem('today_user', JSON.stringify(currentUser));
                 saveProfileData(currentUser);
-                
-                // Upload current local data to Firebase
-                await uploadAllDataToFirebase(userCredential.user.uid);
-                
+
+                // Upload current local data (best-effort)
+                await uploadAllDataToSupabase(newUser.id);
+
                 // Update UI
                 updateProfileUI();
                 hideAuthPopup();
                 showToast('Compte créé !');
                 renderAll();
-                
+
             } catch (error) {
                 let message = 'Erreur lors de l\'inscription';
-                if (error.code === 'auth/email-already-in-use') {
+                if (error?.message && error.message.toLowerCase().includes('already')) {
                     message = 'Cet email est déjà utilisé';
-                } else if (error.code === 'auth/weak-password') {
+                } else if (error?.message && error.message.toLowerCase().includes('weak')) {
                     message = 'Le mot de passe doit contenir au moins 6 caractères';
-                } else if (error.code === 'auth/invalid-email') {
+                } else if (error?.message && error.message.toLowerCase().includes('invalid')) {
                     message = 'Email invalide';
                 }
                 errorEl.textContent = message;
@@ -3015,7 +3007,7 @@
 
         async function logout() {
             try {
-                await auth.signOut();
+                await supabase.auth.signOut();
                 currentUser = null;
                 localStorage.removeItem('today_user');
                 localStorage.removeItem('userProfile');
@@ -3041,11 +3033,11 @@
             // aren't yet present when this function is called.
             console.log('🎨 updateProfileUI called (retries left):', retries);
             console.log('👤 currentUser:', currentUser);
-            const firebaseUser = auth.currentUser;
-            console.log('🔥 Firebase currentUser:', firebaseUser?.email);
+            const supaUser = authUser; // supabase session user
+            console.log('🔥 authUser:', supaUser?.email || supaUser?.user_metadata?.email);
 
-            const pseudo = currentUser?.pseudo || firebaseUser?.displayName || 'Utilisateur';
-            const email = currentUser?.email || firebaseUser?.email || '';
+            const pseudo = currentUser?.pseudo || supaUser?.user_metadata?.pseudo || supaUser?.user_metadata?.name || 'Utilisateur';
+            const email = currentUser?.email || supaUser?.email || supaUser?.user_metadata?.email || '';
             console.log('📝 Will display - pseudo:', pseudo, 'email:', email);
             const avatar = currentUser?.avatar || '';
             const initial = (pseudo && pseudo.length) ? pseudo.charAt(0).toUpperCase() : '?';
@@ -3075,7 +3067,7 @@
                 if (profilePseudo) profilePseudo.value = pseudo;
                 if (profileEmail) {
                     profileEmail.value = email;
-                    profileEmail.disabled = !!firebaseUser;
+                    profileEmail.disabled = !!supaUser;
                 }
 
                 if (avatarLarge) {
@@ -3091,7 +3083,7 @@
         }
 
         // ============================================
-        // FIREBASE SYNC FUNCTIONS
+        // SUPABASE SYNC FUNCTIONS
         // ============================================
         function showSyncIndicator(text, type = '') {
             const el = document.getElementById('sync-indicator');
@@ -3110,185 +3102,208 @@
             document.getElementById('sync-indicator').classList.remove('show');
         }
 
-        async function downloadDataFromFirebase(userId) {
+        async function downloadDataFromSupabase(userId) {
+            // Supabase-based download (keeps old function name for compatibility)
             showSyncIndicator('Synchronisation...');
-            console.log('📥 downloadDataFromFirebase started for userId:', userId);
-            
+                console.log('📥 downloadDataFromSupabase started for userId:', userId);
+
             try {
-                // Get Firebase Auth user email
-                const firebaseUser = auth.currentUser;
-                const authEmail = firebaseUser?.email || '';
-                console.log('📧 Firebase Auth email:', authEmail);
-                
-                const userDoc = await db.collection('users').doc(userId).get();
-                console.log('📄 User document exists:', userDoc.exists);
-                if (userDoc.exists) {
-                    const userData = userDoc.data();
-                    console.log('👤 User data from Firestore:', userData);
+                const uid = userId;
+
+                // Fetch user profile from `users` table
+                let { data: usersData, error: usersError } = await supabase.from('users').select('*').eq('id', uid).limit(1);
+                if (usersError) console.warn('users fetch error:', usersError.message || usersError);
+
+                const userRow = (usersData && usersData.length > 0) ? usersData[0] : null;
+                if (userRow) {
                     currentUser = {
-                        uid: userId,
-                        pseudo: userData.pseudo || 'Utilisateur',
-                        email: userData.email || authEmail,
-                        avatar: userData.avatar || '',
-                        accentColor: userData.accentColor || '#f97316'
+                        uid: uid,
+                        pseudo: userRow.pseudo || 'Utilisateur',
+                        email: userRow.email || '',
+                        avatar: userRow.avatar || '',
+                        accentColor: userRow.accent_color || '#f97316'
                     };
-                    console.log('✅ currentUser set to:', currentUser);
+                    console.log('✅ currentUser set from Supabase users:', currentUser);
                 } else {
-                    // Document doesn't exist yet, create it with auth data
+                    // No user row found; create a minimal client-side profile
                     currentUser = {
-                        uid: userId,
+                        uid: uid,
                         pseudo: 'Utilisateur',
-                        email: authEmail,
+                        email: '',
                         avatar: '',
                         accentColor: '#f97316'
                     };
-                    // Save to Firestore
-                    await db.collection('users').doc(userId).set({
-                        pseudo: currentUser.pseudo,
-                        email: currentUser.email,
-                        accentColor: currentUser.accentColor,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    // Try to insert a users row (best-effort)
+                    try {
+                        const { error: insertErr } = await supabase.from('users').insert([{ id: uid, email: '', pseudo: 'Utilisateur', accent_color: '#f97316' }]);
+                        if (insertErr) console.warn('Could not create users row:', insertErr.message || insertErr);
+                    } catch (e) {
+                        console.warn('users insert failed:', e);
+                    }
                 }
-                
+
                 localStorage.setItem('today_user', JSON.stringify(currentUser));
                 saveProfileData(currentUser);
                 renderProfileButton();
-                
-                if (currentUser.accentColor) {
-                    applyAccentColor(currentUser.accentColor);
-                }
-                
+
+                if (currentUser.accentColor) applyAccentColor(currentUser.accentColor);
+
                 // Load entries
-                const entriesSnap = await db.collection('users').doc(userId).collection('entries').get();
-                if (!entriesSnap.empty) {
-                    const entries = entriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
-                }
-                
+                try {
+                    const { data: entries, error: entriesError } = await supabase.from('entries').select('*').eq('user_id', uid).order('timestamp', { ascending: false });
+                    if (entriesError) console.warn('entries fetch error:', entriesError.message || entriesError);
+                    if (entries && entries.length) localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries.map(e => ({ id: e.id, ...e }))));
+                } catch (e) { console.warn('entries load failed', e); }
+
                 // Load todos
-                const todosSnap = await db.collection('users').doc(userId).collection('todos').get();
-                if (!todosSnap.empty) {
-                    const todos = todosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    localStorage.setItem(TODOS_KEY, JSON.stringify(todos));
-                }
-                
+                try {
+                    const { data: todos, error: todosError } = await supabase.from('todos').select('*').eq('user_id', uid).order('created_at', { ascending: false });
+                    if (todosError) console.warn('todos fetch error:', todosError.message || todosError);
+                    if (todos && todos.length) localStorage.setItem(TODOS_KEY, JSON.stringify(todos.map(t => ({ id: t.id, ...t }))));
+                } catch (e) { console.warn('todos load failed', e); }
+
                 // Load prayers
-                const prayersSnap = await db.collection('users').doc(userId).collection('prayers').get();
-                if (!prayersSnap.empty) {
-                    const prayers = prayersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    localStorage.setItem(PRAYER_KEY, JSON.stringify(prayers));
-                }
-                
-                // Load shortcuts
-                const shortcutsSnap = await db.collection('users').doc(userId).collection('shortcuts').orderBy('position').get();
-                if (!shortcutsSnap.empty) {
-                    const shortcuts = shortcutsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    localStorage.setItem('today_shortcuts', JSON.stringify(shortcuts));
-                }
-                
+                try {
+                    const { data: prayers, error: prayersError } = await supabase.from('prayers').select('*').eq('user_id', uid);
+                    if (prayersError) console.warn('prayers fetch error:', prayersError.message || prayersError);
+                    if (prayers && prayers.length) localStorage.setItem(PRAYER_KEY, JSON.stringify(prayers.map(p => ({ id: p.id, ...p }))));
+                } catch (e) { console.warn('prayers load failed', e); }
+
+                // Load shortcuts (ordered)
+                try {
+                    const { data: shortcuts, error: shortcutsError } = await supabase.from('shortcuts').select('*').eq('user_id', uid).order('position', { ascending: true });
+                    if (shortcutsError) console.warn('shortcuts fetch error:', shortcutsError.message || shortcutsError);
+                    if (shortcuts && shortcuts.length) localStorage.setItem('today_shortcuts', JSON.stringify(shortcuts.map(s => ({ id: s.id, ...s }))));
+                } catch (e) { console.warn('shortcuts load failed', e); }
+
                 // Load notes
-                const notesSnap = await db.collection('users').doc(userId).collection('notes').get();
-                if (!notesSnap.empty) {
-                    const notes = notesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-                }
-                
-                // Load objectives
-                const objDoc = await db.collection('users').doc(userId).collection('settings').doc('objectives').get();
-                if (objDoc.exists) {
-                    localStorage.setItem('objectives', JSON.stringify(objDoc.data()));
-                }
-                
-                // Load habit config
-                const habitConfigDoc = await db.collection('users').doc(userId).collection('settings').doc('habitConfig').get();
-                if (habitConfigDoc.exists) {
-                    localStorage.setItem(HABIT_CONFIG_KEY, JSON.stringify({ habits: habitConfigDoc.data().habits }));
-                }
-                
+                try {
+                    const { data: notes, error: notesError } = await supabase.from('notes').select('*').eq('user_id', uid).order('updated_at', { ascending: false });
+                    if (notesError) console.warn('notes fetch error:', notesError.message || notesError);
+                    if (notes && notes.length) localStorage.setItem(NOTES_KEY, JSON.stringify(notes.map(n => ({ id: n.id, ...n }))));
+                } catch (e) { console.warn('notes load failed', e); }
+
+                // Load settings (objectives, habitConfig)
+                try {
+                    const { data: settingsRows, error: settingsError } = await supabase.from('settings').select('*').eq('user_id', uid);
+                    if (settingsError) console.warn('settings fetch error:', settingsError.message || settingsError);
+                    if (settingsRows && settingsRows.length) {
+                        for (const row of settingsRows) {
+                            if (row.key === 'objectives' && row.value) {
+                                localStorage.setItem('objectives', JSON.stringify(row.value));
+                            }
+                            if (row.key === 'habitConfig' && row.value) {
+                                localStorage.setItem(HABIT_CONFIG_KEY, JSON.stringify({ habits: row.value.habits || row.value }));
+                            }
+                        }
+                    }
+                } catch (e) { console.warn('settings load failed', e); }
+
                 showSyncIndicator('Synchronisé ✓', 'success');
                 renderAll();
             } catch (error) {
-                console.error('Download sync error:', error);
+                console.error('Download sync error (Supabase):', error);
                 showSyncIndicator('Erreur de sync', 'error');
             }
         }
 
-        async function uploadAllDataToFirebase(userId) {
+        async function uploadAllDataToSupabase(userId) {
+            // Supabase-based upload (keeps old function name)
             showSyncIndicator('Sauvegarde...');
-            
+
             try {
-                const batch = db.batch();
-                
-                // Upload entries
-                const entries = getEntries();
-                for (const entry of entries) {
-                    const ref = db.collection('users').doc(userId).collection('entries').doc(entry.id);
-                    batch.set(ref, { text: entry.text, date: entry.date, time: entry.time || '', timestamp: entry.timestamp || '' });
-                }
-                
+                const uid = userId;
+
+                // Upload entries (bulk upsert)
+                try {
+                    const entries = getEntries().map(e => ({ ...e, user_id: uid }));
+                    if (entries.length) {
+                        const { error: entriesError } = await supabase.from('entries').upsert(entries, { onConflict: 'id' });
+                        if (entriesError) console.warn('entries upsert error:', entriesError.message || entriesError);
+                    }
+                } catch (e) { console.warn('entries upload failed', e); }
+
                 // Upload todos
-                const todos = getTodos();
-                for (const todo of todos) {
-                    const ref = db.collection('users').doc(userId).collection('todos').doc(todo.id);
-                    batch.set(ref, { text: todo.text, done: todo.done });
-                }
-                
+                try {
+                    const todos = getTodos().map(t => ({ ...t, user_id: uid }));
+                    if (todos.length) {
+                        const { error: todosError } = await supabase.from('todos').upsert(todos, { onConflict: 'id' });
+                        if (todosError) console.warn('todos upsert error:', todosError.message || todosError);
+                    }
+                } catch (e) { console.warn('todos upload failed', e); }
+
                 // Upload prayers
-                const prayers = JSON.parse(localStorage.getItem(PRAYER_KEY) || '[]');
-                for (const prayer of prayers) {
-                    const ref = db.collection('users').doc(userId).collection('prayers').doc(prayer.id);
-                    batch.set(ref, { text: prayer.text, answered: prayer.answered || false });
-                }
-                
+                try {
+                    const prayers = (JSON.parse(localStorage.getItem(PRAYER_KEY) || '[]')).map(p => ({ ...p, user_id: uid }));
+                    if (prayers.length) {
+                        const { error: prayersError } = await supabase.from('prayers').upsert(prayers, { onConflict: 'id' });
+                        if (prayersError) console.warn('prayers upsert error:', prayersError.message || prayersError);
+                    }
+                } catch (e) { console.warn('prayers upload failed', e); }
+
                 // Upload shortcuts
-                const shortcuts = JSON.parse(localStorage.getItem('today_shortcuts') || '[]');
-                shortcuts.forEach((s, i) => {
-                    const ref = db.collection('users').doc(userId).collection('shortcuts').doc(s.id);
-                    batch.set(ref, { url: s.url, title: s.title, position: i });
-                });
-                
+                try {
+                    const shortcuts = (JSON.parse(localStorage.getItem('today_shortcuts') || '[]')).map((s, i) => ({ ...s, user_id: uid, position: i }));
+                    if (shortcuts.length) {
+                        const { error: shortcutsError } = await supabase.from('shortcuts').upsert(shortcuts, { onConflict: 'id' });
+                        if (shortcutsError) console.warn('shortcuts upsert error:', shortcutsError.message || shortcutsError);
+                    }
+                } catch (e) { console.warn('shortcuts upload failed', e); }
+
                 // Upload notes
-                const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '[]');
-                for (const note of notes) {
-                    const ref = db.collection('users').doc(userId).collection('notes').doc(note.id);
-                    batch.set(ref, { title: note.title, content: note.content, updatedAt: note.updatedAt || '' });
-                }
-                
-                // Upload objectives
-                const objectives = JSON.parse(localStorage.getItem('objectives') || '{}');
-                const objRef = db.collection('users').doc(userId).collection('settings').doc('objectives');
-                batch.set(objRef, objectives);
-                
-                // Upload habit config
-                const habitConfig = JSON.parse(localStorage.getItem(HABIT_CONFIG_KEY) || '{}');
-                if (habitConfig.habits) {
-                    const hcRef = db.collection('users').doc(userId).collection('settings').doc('habitConfig');
-                    batch.set(hcRef, { habits: habitConfig.habits });
-                }
-                
-                await batch.commit();
+                try {
+                    const notes = (JSON.parse(localStorage.getItem(NOTES_KEY) || '[]')).map(n => ({ ...n, user_id: uid }));
+                    if (notes.length) {
+                        const { error: notesError } = await supabase.from('notes').upsert(notes, { onConflict: 'id' });
+                        if (notesError) console.warn('notes upsert error:', notesError.message || notesError);
+                    }
+                } catch (e) { console.warn('notes upload failed', e); }
+
+                // Upload objectives and habitConfig into settings table
+                try {
+                    const objectives = JSON.parse(localStorage.getItem('objectives') || '{}');
+                    const habitConfig = JSON.parse(localStorage.getItem(HABIT_CONFIG_KEY) || '{}');
+
+                    if (objectives && Object.keys(objectives).length) {
+                        const { error: objErr } = await supabase.from('settings').upsert([{ user_id: uid, key: 'objectives', value: objectives }], { onConflict: ['user_id', 'key'] });
+                        if (objErr) console.warn('objectives upsert error:', objErr.message || objErr);
+                    }
+
+                    if (habitConfig && habitConfig.habits) {
+                        const { error: hcErr } = await supabase.from('settings').upsert([{ user_id: uid, key: 'habitConfig', value: { habits: habitConfig.habits } }], { onConflict: ['user_id', 'key'] });
+                        if (hcErr) console.warn('habitConfig upsert error:', hcErr.message || hcErr);
+                    }
+                } catch (e) { console.warn('settings upload failed', e); }
+
                 showSyncIndicator('Sauvegardé ✓', 'success');
             } catch (error) {
-                console.error('Upload sync error:', error);
+                console.error('Upload sync error (Supabase):', error);
                 showSyncIndicator('Erreur de sauvegarde', 'error');
             }
         }
 
         // Sync individual items
-        async function syncToFirebase(collection, id, data) {
-            if (!auth.currentUser) return;
+        async function syncToSupabase(collection, id, data) {
+            // Perform a single-row upsert to the collection table with user_id
+            const fallbackUid = (currentUser && currentUser.uid) || (() => { try { return JSON.parse(localStorage.getItem('today_user')|| '{}').uid; } catch { return null; } })();
+            const uid = authUser?.id || fallbackUid;
+            if (!uid) return;
             try {
-                await db.collection('users').doc(auth.currentUser.uid).collection(collection).doc(id).set(data, { merge: true });
+                const payload = { id: id, user_id: uid, ...data };
+                const { error } = await supabase.from(collection).upsert([payload], { onConflict: 'id' });
+                if (error) console.error('Sync error:', error);
             } catch (e) {
                 console.error('Sync error:', e);
             }
         }
 
-        async function deleteFromFirebase(collection, id) {
-            if (!auth.currentUser) return;
+        async function deleteFromSupabase(collection, id) {
+            const fallbackUid = (currentUser && currentUser.uid) || (() => { try { return JSON.parse(localStorage.getItem('today_user')|| '{}').uid; } catch { return null; } })();
+            const uid = authUser?.id || fallbackUid;
+            if (!uid) return;
             try {
-                await db.collection('users').doc(auth.currentUser.uid).collection(collection).doc(id).delete();
+                const { error } = await supabase.from(collection).delete().eq('id', id).eq('user_id', uid);
+                if (error) console.error('Delete error:', error);
             } catch (e) {
                 console.error('Delete error:', e);
             }
@@ -3297,11 +3312,13 @@
         // Debounce sync to avoid too many requests
         let syncTimeout = null;
         function scheduleSync() {
-            if (!auth.currentUser) return;
-            
+            const fallbackUid = (currentUser && currentUser.uid) || (() => { try { return JSON.parse(localStorage.getItem('today_user')|| '{}').uid; } catch { return null; } })();
+            const uid = authUser?.id || fallbackUid;
+            if (!uid) return;
+
             if (syncTimeout) clearTimeout(syncTimeout);
             syncTimeout = setTimeout(() => {
-                uploadAllDataToFirebase(auth.currentUser.uid);
+                uploadAllDataToSupabase(uid);
             }, 3000);
         }
 
@@ -4431,14 +4448,14 @@
                 return currentUser;
             }
 
-            const firebaseUser = auth.currentUser;
-            if (firebaseUser) {
+            const supaUser = authUser; // supabase session user
+            if (supaUser) {
                 return {
-                    uid: firebaseUser.uid,
-                    pseudo: firebaseUser.displayName || '',
-                    email: firebaseUser.email || '',
-                    avatar: '',
-                    accentColor: DEFAULT_ACCENT
+                    uid: supaUser.id,
+                    pseudo: supaUser.user_metadata?.pseudo || supaUser.user_metadata?.name || '',
+                    email: supaUser.email || supaUser.user_metadata?.email || '',
+                    avatar: supaUser.user_metadata?.avatar || '',
+                    accentColor: supaUser.user_metadata?.accent_color || DEFAULT_ACCENT
                 };
             }
 
@@ -4509,16 +4526,16 @@
             }
             const initial = document.getElementById('profile-initial');
             if (initial) {
-                const displayPseudo = profile.pseudo || auth.currentUser?.displayName || auth.currentUser?.email || '';
+                const displayPseudo = profile.pseudo || authUser?.user_metadata?.pseudo || authUser?.email || '';
                 initial.textContent = displayPseudo ? displayPseudo.charAt(0).toUpperCase() : '?';
             }
         }
 
         function openProfileSettings() {
             const profile = getProfile();
-            const firebaseUser = auth.currentUser;
-            const pseudoValue = profile.pseudo || firebaseUser?.displayName || firebaseUser?.email?.split('@')[0] || '';
-            const emailValue = profile.email || firebaseUser?.email || '';
+            const supaUser = authUser;
+            const pseudoValue = profile.pseudo || supaUser?.user_metadata?.pseudo || supaUser?.email?.split('@')[0] || '';
+            const emailValue = profile.email || supaUser?.email || '';
             document.getElementById('profile-pseudo').value = pseudoValue;
             document.getElementById('profile-email').value = emailValue;
             selectedAccentColor = profile.accentColor || DEFAULT_ACCENT;
@@ -4582,25 +4599,23 @@
             saveProfileData(profile);
             applyAccentColor(selectedAccentColor);
             
-            // Update Firebase if logged in
-            if (auth.currentUser) {
+            // Update Supabase users row if logged in
+            if (authUser) {
                 currentUser = {
                     ...currentUser,
                     pseudo: pseudo,
                     accentColor: selectedAccentColor
                 };
                 if (newAvatar) currentUser.avatar = newAvatar;
-                
+
                 localStorage.setItem('today_user', JSON.stringify(currentUser));
-                
+
                 try {
-                    await db.collection('users').doc(auth.currentUser.uid).update({
-                        pseudo: pseudo,
-                        accentColor: selectedAccentColor,
-                        avatar: currentUser.avatar || ''
-                    });
+                    const upsertPayload = [{ id: authUser.id, pseudo: pseudo, accent_color: selectedAccentColor, avatar: currentUser.avatar || '', email: currentUser.email || authUser.email }];
+                    const { error: upsertErr } = await supabase.from('users').upsert(upsertPayload, { onConflict: 'id' });
+                    if (upsertErr) console.error('Error saving profile to Supabase users table:', upsertErr.message || upsertErr);
                 } catch (e) {
-                    console.error('Error saving profile to Firebase:', e);
+                    console.error('Error saving profile to Supabase:', e);
                 }
             }
             
@@ -4820,27 +4835,48 @@
         // ============================================
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 DOMContentLoaded fired');
-            
-            // Firebase Auth State Listener
-            auth.onAuthStateChanged(async (user) => {
-                console.log('🔥 onAuthStateChanged fired, user:', user ? user.email : 'null');
-                if (user) {
-                    // User is signed in
-                    console.log('✅ User is signed in:', user.uid);
+
+            // Supabase Auth: check current session and listen for changes
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                authUser = session?.user || null;
+                console.log('🔥 initial session user:', authUser ? authUser.email : 'null');
+                if (authUser) {
                     hideAuthPopup();
                     try {
-                        await downloadDataFromFirebase(user.uid);
-                        console.log('✅ downloadDataFromFirebase completed');
+                        await downloadDataFromSupabase(authUser.id);
+                        console.log('✅ downloadDataFromSupabase completed');
                     } catch (err) {
-                        console.error('❌ downloadDataFromFirebase error:', err);
+                        console.error('❌ downloadDataFromSupabase error:', err);
                     }
                     updateProfileUI();
                     console.log('✅ updateProfileUI completed');
                     showToast('Connecté !');
                     renderAll();
                 } else {
-                    // User is signed out - show auth popup
-                    console.log('❌ User is signed out');
+                    showAuthPopup();
+                }
+            } catch (e) {
+                console.error('Error checking supabase session', e);
+            }
+
+            // Subscribe to auth state changes
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                authUser = session?.user || null;
+                console.log('🔥 onAuthStateChange', event, authUser ? authUser.email : 'null');
+                if (authUser) {
+                    hideAuthPopup();
+                    try {
+                        await downloadDataFromSupabase(authUser.id);
+                    } catch (err) {
+                        console.error('❌ downloadDataFromSupabase error:', err);
+                    }
+                    updateProfileUI();
+                    showToast('Connecté !');
+                    renderAll();
+                } else {
+                    currentUser = null;
+                    localStorage.removeItem('today_user');
                     showAuthPopup();
                 }
             });
