@@ -3055,21 +3055,42 @@
             showSyncIndicator('Synchronisation...');
             
             try {
+                // Get Firebase Auth user email
+                const firebaseUser = auth.currentUser;
+                const authEmail = firebaseUser?.email || '';
+                
                 const userDoc = await db.collection('users').doc(userId).get();
                 if (userDoc.exists) {
                     const userData = userDoc.data();
                     currentUser = {
                         uid: userId,
                         pseudo: userData.pseudo || 'Utilisateur',
-                        email: userData.email || '',
+                        email: userData.email || authEmail,
                         avatar: userData.avatar || '',
                         accentColor: userData.accentColor || '#f97316'
                     };
-                    localStorage.setItem('today_user', JSON.stringify(currentUser));
-                    
-                    if (currentUser.accentColor) {
-                        applyAccentColor(currentUser.accentColor);
-                    }
+                } else {
+                    // Document doesn't exist yet, create it with auth data
+                    currentUser = {
+                        uid: userId,
+                        pseudo: 'Utilisateur',
+                        email: authEmail,
+                        avatar: '',
+                        accentColor: '#f97316'
+                    };
+                    // Save to Firestore
+                    await db.collection('users').doc(userId).set({
+                        pseudo: currentUser.pseudo,
+                        email: currentUser.email,
+                        accentColor: currentUser.accentColor,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                
+                localStorage.setItem('today_user', JSON.stringify(currentUser));
+                
+                if (currentUser.accentColor) {
+                    applyAccentColor(currentUser.accentColor);
                 }
                 
                 // Load entries
