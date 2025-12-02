@@ -46,14 +46,16 @@ const Input = {
             }
         });
 
-        // Auto-save on blur (after a delay)
+        // Auto-save on blur (after a delay) - DISABLED to prevent unwanted saves
+        // The user should explicitly press Enter to save
         this.inputField.addEventListener('blur', () => {
-            if (this.inputField.value.trim()) {
-                clearTimeout(this.saveTimeout);
-                this.saveTimeout = setTimeout(() => {
-                    this.saveEntry();
-                }, 500);
-            }
+            // Cancel any pending save when losing focus
+            clearTimeout(this.saveTimeout);
+        });
+
+        // Cancel save timeout when focusing back
+        this.inputField.addEventListener('focus', () => {
+            clearTimeout(this.saveTimeout);
         });
 
         // Date picker toggle
