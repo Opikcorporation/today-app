@@ -3012,8 +3012,9 @@
         }
 
         function updateProfileUI() {
-            const pseudo = currentUser?.pseudo || 'Utilisateur';
-            const email = currentUser?.email || '';
+            const firebaseUser = auth.currentUser;
+            const pseudo = currentUser?.pseudo || firebaseUser?.displayName || 'Utilisateur';
+            const email = currentUser?.email || firebaseUser?.email || '';
             const avatar = currentUser?.avatar || '';
             const initial = pseudo.charAt(0).toUpperCase();
             
@@ -3021,10 +3022,12 @@
             document.getElementById('profile-initial-large').textContent = initial;
             document.getElementById('profile-pseudo').value = pseudo;
             document.getElementById('profile-email').value = email;
-            document.getElementById('profile-email').disabled = !!auth.currentUser;
+            document.getElementById('profile-email').disabled = !!firebaseUser;
             
             if (avatar) {
                 document.querySelector('.profile-avatar-large').innerHTML = `<img src="${avatar}" alt="Avatar">`;
+            } else {
+                document.querySelector('.profile-avatar-large').innerHTML = `<span class="profile-initial-large">${initial}</span><div class="profile-avatar-edit">Modifier</div>`;
             }
         }
 
