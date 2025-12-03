@@ -28,6 +28,34 @@
 			"command": "cd /Users/alessioopik/Desktop/today-browser && npx electron .",
 			"isBackground": true,
 			"problemMatcher": []
+		},
+		{
+			"label": "TODAY Browser",
+			"type": "shell",
+			"command": "cd /Users/alessioopik/Desktop/today-browser && npx electron .",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "TODAY Browser",
+			"type": "shell",
+			"command": "cd /Users/alessioopik/Desktop/today-browser && npx electron .",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Deploy to Vercel",
+			"type": "shell",
+			"command": "cd /Users/alessioopik/Desktop/today && git add -A && git commit -m 'Improve light mode styling' && git push origin gh-pages",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "TODAY Browser",
+			"type": "shell",
+			"command": "cd /Users/alessioopik/Desktop/today-browser && npx electron .",
+			"isBackground": true,
+			"problemMatcher": []
 		}
 	]
 }

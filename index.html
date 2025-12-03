@@ -71,26 +71,133 @@
             --green: #22c55e;
             --green-dim: #166534;
             --red: #ef4444;
+            --shadow: rgba(0, 0, 0, 0.3);
         }
         
-        /* Mode Clair */
+        /* Mode Clair - Optimisé */
         :root.light {
-            --bg: #f5f5f5;
+            --bg: #f0f2f5;
             --card: #ffffff;
-            --card-hover: #e8e8e8;
-            --border: #d4d4d4;
+            --card-hover: #f8f9fa;
+            --border: #e0e0e0;
             --text: #1a1a1a;
-            --text-muted: #666666;
+            --text-muted: #6b7280;
             --green: #16a34a;
-            --green-dim: #bbf7d0;
+            --green-dim: #dcfce7;
+            --red: #dc2626;
+            --shadow: rgba(0, 0, 0, 0.08);
         }
         
         :root.light .logo {
-            background: linear-gradient(135deg, #333 0%, var(--accent) 100%);
+            background: linear-gradient(135deg, #1a1a1a 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         :root.light .auth-logo {
-            background: linear-gradient(135deg, #333 0%, var(--accent) 100%);
+            background: linear-gradient(135deg, #1a1a1a 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        :root.light .widget {
+            box-shadow: 0 1px 3px var(--shadow);
+        }
+        
+        :root.light .entry {
+            background: var(--card);
+            border-color: var(--border);
+        }
+        
+        :root.light .entry:hover {
+            border-color: #ccc;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+        
+        :root.light .todo-item,
+        :root.light .habit-item,
+        :root.light .prayer-item {
+            background: var(--bg);
+        }
+        
+        :root.light .todo-item:hover,
+        :root.light .habit-item:hover,
+        :root.light .prayer-item:hover {
+            background: #e8e8e8;
+        }
+        
+        :root.light .calendar-day:hover {
+            background: #e0e0e0;
+        }
+        
+        :root.light .toggle-btn:not(.active) {
+            color: var(--text-muted);
+        }
+        
+        :root.light .toggle-btn:not(.active):hover {
+            background: #e0e0e0;
+            color: var(--text);
+        }
+        
+        :root.light .nav-btn:hover,
+        :root.light .timer-preset:hover {
+            background: #e0e0e0;
+        }
+        
+        :root.light .auth-popup {
+            background: var(--bg);
+        }
+        
+        :root.light .auth-content {
+            box-shadow: 0 8px 32px var(--shadow);
+        }
+        
+        :root.light .auth-tabs {
+            background: #e8e8e8;
+        }
+        
+        :root.light .verse-container {
+            background: linear-gradient(135deg, #fafafa 0%, #f0f0f0 100%);
+        }
+        
+        :root.light .mood-btn {
+            background: #e8e8e8;
+        }
+        
+        :root.light .mood-btn:hover {
+            background: #d8d8d8;
+        }
+        
+        :root.light .popup {
+            box-shadow: 0 8px 32px var(--shadow);
+        }
+        
+        :root.light .top-left-search {
+            box-shadow: 0 1px 3px var(--shadow);
+        }
+        
+        :root.light .profile-popup-content {
+            box-shadow: 0 8px 32px var(--shadow);
+        }
+        
+        :root.light .shortcut-btn {
+            box-shadow: 0 1px 3px var(--shadow);
+        }
+        
+        :root.light .shortcut-btn:hover {
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+        
+        :root.light .widget-icon {
+            stroke: var(--text-muted);
+        }
+        
+        :root.light ::-webkit-scrollbar-thumb {
+            background: #c0c0c0;
+        }
+        
+        :root.light ::-webkit-scrollbar-thumb:hover {
+            background: #a0a0a0;
         }
 
         body {
