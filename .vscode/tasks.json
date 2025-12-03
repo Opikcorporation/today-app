@@ -105,6 +105,13 @@
 			"command": "cd /Users/alessioopik/Desktop/today-browser && npm start",
 			"isBackground": true,
 			"problemMatcher": []
+		},
+		{
+			"label": "Launch TODAY Browser",
+			"type": "shell",
+			"command": "cd /Users/alessioopik/Desktop/today-browser && npm start",
+			"isBackground": true,
+			"problemMatcher": []
 		}
 	]
 }
