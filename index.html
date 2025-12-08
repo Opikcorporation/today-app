@@ -5359,13 +5359,27 @@
 
         // ===== GOOGLE SEARCH =====
         function searchGoogle(e) {
-            e.preventDefault();
-            const query = document.getElementById('google-search').value.trim();
+            if (e) e.preventDefault();
+            const input = document.getElementById('google-search');
+            const query = input.value.trim();
             if (query) {
                 window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
-                document.getElementById('google-search').value = '';
+                input.value = '';
             }
         }
+
+        // Add Enter key listener for Google search
+        document.addEventListener('DOMContentLoaded', () => {
+            const googleInput = document.getElementById('google-search');
+            if (googleInput) {
+                googleInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        searchGoogle();
+                    }
+                });
+            }
+        });
 
         // ============================================
         // INIT
