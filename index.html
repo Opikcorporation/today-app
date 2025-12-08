@@ -3721,6 +3721,8 @@
 
         function deleteEntry(id) {
             saveEntries(getEntries().filter(e => e.id !== id));
+            // Also delete from Supabase
+            deleteFromSupabase('entries', id);
         }
 
         // Todos
@@ -3756,6 +3758,8 @@
 
         function deleteTodo(id) {
             saveTodos(getTodos().filter(t => t.id !== id));
+            // Also delete from Supabase
+            deleteFromSupabase('todos', id);
         }
 
         // ============================================
