@@ -209,6 +209,19 @@
             -webkit-font-smoothing: antialiased;
             transition: background 0.3s, color 0.3s;
         }
+
+        /* Top gradient overlay for better contrast */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: linear-gradient(to bottom, var(--bg) 0%, var(--bg) 40%, transparent 100%);
+            z-index: 99;
+            pointer-events: none;
+        }
         
         /* Theme toggle button */
         .theme-toggle-btn {
