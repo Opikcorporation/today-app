@@ -1481,6 +1481,41 @@
         /* ============================================
            TODO WIDGET
            ============================================ */
+        .bento-tall {
+            grid-row: span 2;
+        }
+
+        .todo-categories {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .todo-category-btn {
+            padding: 6px 12px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .todo-category-btn:hover {
+            border-color: var(--accent);
+        }
+
+        .todo-category-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
         .todo-input-row {
             display: flex;
             gap: 8px;
@@ -1526,7 +1561,8 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            max-height: 250px;
+            flex: 1;
+            max-height: none;
             overflow-y: auto;
         }
 
@@ -1570,6 +1606,11 @@
             content: '✓';
             color: white;
             font-size: 0.7rem;
+        }
+
+        .todo-category-icon {
+            font-size: 0.85rem;
+            opacity: 0.7;
         }
 
         .todo-text {
@@ -2237,6 +2278,71 @@
             color: var(--accent);
         }
 
+        .popup-add-category-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .popup-add-btn-small {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .popup-add-btn-small:hover {
+            background: var(--accent-hover);
+        }
+
+        .popup-category-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .popup-category-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .popup-category-item .category-icon {
+            font-size: 1.2rem;
+        }
+
+        .popup-category-item .category-name {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .popup-category-delete {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .popup-category-delete:hover {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+        }
+
         .objective-textarea {
             width: 100%;
             min-height: 80px;
@@ -2875,9 +2981,18 @@
                     </div>
                 </div>
 
-            <div class="widget bento-cube" id="todo-widget">
-                <div class="widget-header">
+            <div class="widget bento-cube bento-tall" id="todo-widget">
+                <div class="widget-header-with-btn">
                     <span class="widget-title"><svg class="widget-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> À faire</span>
+                    <button class="widget-settings-btn" onclick="openTodoSettings()" title="Paramètres">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="todo-categories" id="todo-categories">
+                    <!-- Category tabs rendered here -->
                 </div>
                 <div class="todo-input-row">
                     <input type="text" id="todo-input" class="todo-input" placeholder="Nouvelle tâche...">
@@ -3013,6 +3128,34 @@
                     </div>
                 </div>
 
+                <!-- Todo Settings Popup -->
+                <div class="popup-overlay" id="todo-popup">
+                    <div class="popup">
+                        <div class="popup-header">
+                            <span class="popup-title">⚙️ Paramètres Tâches</span>
+                            <button class="popup-close" onclick="closeTodoSettings()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="popup-body">
+                            <div class="popup-section">
+                                <div class="popup-section-title">Catégories</div>
+                                <div class="popup-category-list" id="popup-todo-category-list">
+                                    <!-- Category items rendered here -->
+                                </div>
+                                <div class="popup-add-category-row">
+                                    <input type="text" id="new-todo-category-icon" class="popup-habit-input icon-input" placeholder="📋" maxlength="2">
+                                    <input type="text" id="new-todo-category-name" class="popup-habit-input" placeholder="Nom de la catégorie">
+                                    <button class="popup-add-btn-small" onclick="addTodoCategory()">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             <!-- Row 4: 4 cubes -->
             <div class="widget bento-cube" id="mood-widget">
                     <div class="widget-header">
@@ -3034,22 +3177,7 @@
                     </div>
                 </div>
 
-            <div class="widget bento-cube" id="notes-widget">
-                    <div class="widget-header">
-                        <span class="widget-title"><svg class="widget-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Notes</span>
-                    </div>
-                    <div class="notes-quick-add">
-                        <input type="text" id="note-input" class="notes-input" placeholder="Nouvelle note rapide...">
-                        <button class="notes-add-btn" onclick="addQuickNote()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <line x1="12" y1="5" x2="12" y2="19"/>
-                                <line x1="5" y1="12" x2="19" y2="12"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="notes-count" id="notes-count">0 notes</div>
-                    <button class="notes-view-all" onclick="window.location.href='notes.html'">📄 Toutes mes notes</button>
-                </div>
+
 
             <div class="widget bento-cube" id="prayer-widget">
                     <div class="widget-header">
@@ -3531,11 +3659,11 @@
         function renderAll() {
             renderEntries();
             renderCalendar();
+            renderTodoCategories();
             renderTodos();
             updateMementoMori();
             renderHabits();
             renderMood();
-            renderNotesCount();
             renderPrayers();
             renderDailyVerse();
             renderShortcuts();
@@ -3599,6 +3727,7 @@
                 id: Date.now().toString(),
                 text: text.trim(),
                 done: false,
+                category: currentTodoCategory === 'all' ? 'perso' : currentTodoCategory,
                 createdAt: new Date().toISOString()
             });
             saveTodos(todos);
@@ -3801,12 +3930,60 @@
         }
 
         // ============================================
-        // TODO LIST
+        // TODO LIST WITH CATEGORIES
         // ============================================
+        const TODO_CATEGORIES_KEY = 'today_todo_categories_v1';
+        let currentTodoCategory = 'all';
+
+        const DEFAULT_TODO_CATEGORIES = [
+            { id: 'perso', icon: '🏠', name: 'Personnel' },
+            { id: 'travail', icon: '💼', name: 'Travail' },
+            { id: 'urgent', icon: '🔥', name: 'Urgent' }
+        ];
+
+        function getTodoCategories() {
+            try {
+                const cats = JSON.parse(localStorage.getItem(TODO_CATEGORIES_KEY));
+                return cats || DEFAULT_TODO_CATEGORIES;
+            } catch (e) {
+                return DEFAULT_TODO_CATEGORIES;
+            }
+        }
+
+        function saveTodoCategories(categories) {
+            localStorage.setItem(TODO_CATEGORIES_KEY, JSON.stringify(categories));
+        }
+
+        function setTodoCategory(categoryId) {
+            currentTodoCategory = categoryId;
+            renderTodoCategories();
+            renderTodos();
+        }
+
+        function renderTodoCategories() {
+            const container = document.getElementById('todo-categories');
+            const categories = getTodoCategories();
+            
+            let html = `<button class="todo-category-btn ${currentTodoCategory === 'all' ? 'active' : ''}" onclick="setTodoCategory('all')">📋 Tout</button>`;
+            
+            html += categories.map(cat => `
+                <button class="todo-category-btn ${currentTodoCategory === cat.id ? 'active' : ''}" onclick="setTodoCategory('${cat.id}')">
+                    ${cat.icon} ${cat.name}
+                </button>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
         function renderTodos() {
             const container = document.getElementById('todo-list');
             const stats = document.getElementById('todo-stats');
-            const todos = getTodos();
+            let todos = getTodos();
+
+            // Filter by category if not "all"
+            if (currentTodoCategory !== 'all') {
+                todos = todos.filter(t => t.category === currentTodoCategory);
+            }
 
             if (todos.length === 0) {
                 container.innerHTML = '<div class="todo-empty">Aucune tâche</div>';
@@ -3814,9 +3991,16 @@
                 return;
             }
 
+            const categories = getTodoCategories();
+            const getCategoryIcon = (catId) => {
+                const cat = categories.find(c => c.id === catId);
+                return cat ? cat.icon : '📝';
+            };
+
             container.innerHTML = todos.map(todo => `
                 <div class="todo-item ${todo.done ? 'done' : ''}" data-id="${todo.id}">
                     <div class="todo-checkbox" onclick="handleToggleTodo('${todo.id}')"></div>
+                    <span class="todo-category-icon">${getCategoryIcon(todo.category)}</span>
                     <span class="todo-text">${escapeHtml(todo.text)}</span>
                     <button class="todo-delete" onclick="handleDeleteTodo('${todo.id}')">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3827,8 +4011,67 @@
                 </div>
             `).join('');
 
-            const done = todos.filter(t => t.done).length;
-            stats.innerHTML = `<span>${done}/${todos.length} terminées</span>`;
+            const allTodos = getTodos();
+            const done = allTodos.filter(t => t.done).length;
+            stats.innerHTML = `<span>${done}/${allTodos.length} terminées</span>`;
+        }
+
+        // Todo Settings Popup
+        function openTodoSettings() {
+            renderTodoPopup();
+            document.getElementById('todo-popup').classList.add('show');
+        }
+
+        function closeTodoSettings() {
+            document.getElementById('todo-popup').classList.remove('show');
+            renderTodoCategories();
+            renderTodos();
+        }
+
+        function renderTodoPopup() {
+            const categories = getTodoCategories();
+            const container = document.getElementById('popup-todo-category-list');
+            
+            container.innerHTML = categories.map((cat, index) => `
+                <div class="popup-category-item" data-index="${index}">
+                    <span class="category-icon">${cat.icon}</span>
+                    <span class="category-name">${cat.name}</span>
+                    <button class="popup-category-delete" onclick="deleteTodoCategory(${index})">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function addTodoCategory() {
+            const iconInput = document.getElementById('new-todo-category-icon');
+            const nameInput = document.getElementById('new-todo-category-name');
+            const icon = iconInput.value.trim() || '📋';
+            const name = nameInput.value.trim();
+            
+            if (!name) return;
+            
+            const categories = getTodoCategories();
+            categories.push({
+                id: 'cat_' + Date.now(),
+                icon: icon,
+                name: name
+            });
+            saveTodoCategories(categories);
+            
+            iconInput.value = '';
+            nameInput.value = '';
+            renderTodoPopup();
+        }
+
+        function deleteTodoCategory(index) {
+            const categories = getTodoCategories();
+            categories.splice(index, 1);
+            saveTodoCategories(categories);
+            renderTodoPopup();
         }
 
         // ============================================
@@ -5230,12 +5473,12 @@
             // Initial render
             renderEntries();
             renderCalendar();
+            renderTodoCategories();
             renderTodos();
             initTimer();
             updateMementoMori();
             renderHabits();
             renderMood();
-            renderNotesCount();
             renderPrayers();
             renderDailyVerse();
             renderShortcuts();
